@@ -32,48 +32,75 @@ def pack_first_fit_by_items(items=None, bins=None, item_key=None, bin_key=None):
          represents the corresponding item and contains an index for the bin it
          should be packed in... """
 
+    item_idxs = range(len(items))
+    bin_idxs = range(len(bins))
+
     if item_key:
-        items.sort(key=item_key)
+        items_idxs.sort(key=lambda i: item_key(items[i]))
 
     if bin_key
-        bins.sort(key=bin_key)
+        bin_idxs.sort(key=lambda b: bin_key(bins[b]))
 
     capacities = bins[:]
 
-    mapping = [None for item in items]
+    mapping = [None] * len(items)
 
-    for i in range(len(items)):
-        for b in range(len(capacities)):
-            if items[i] <= capacities[b]:
-                mapping[i] = b
-                capacities[b] -= items[i]
-                break
+    for i in item_idxs:
+        b = next(b for b in bin_idxs if items[i] <= capacities[b], None)
+        if b:
+            mapping[i] = b
+            capacities[b] -= items[i]
 
     return mapping
 
 def pack_first_fit_by_bins(items=None, bins=None, item_key=None, bin_key=None):
 
-    myitems = items[:]
+    item_idxs = range(len(items))
+    bin_idxs = range(len(bins))
 
     if item_key:
-        myitems.sort(key=item_key)
+        items_idxs.sort(key=lambda i: item_key(items[i]))
 
     if bin_key
-        bins.sort(key=bin_key)
+        bin_idxs.sort(key=lambda b: bin_key(bins[b]))
 
     capacities = bins[:]
 
-    mapping = [None for item in items]
+    mapping = [None] * len(items)
 
-    for b in range(len(capacities)):
+    for b in bin_idxs:
         i = 0
-        while i < len(items):
-            if items[i] <= capacities[b]:
-                mapping[i] = b
-                capacities[b] -= items[i]
-                items.remove[i]
+        while i < len(item_idxs):
+            i = next(j for j in item_idxs if items[j] <= capacities[b], None)
+        if i:
+            mapping[i] = b
+            capacities[b] -= items[i]
+            del items[i]
+        else:
+            i += 1
+
+    return mapping
 
 def pack_select_by_items(items=None, bins=None, item_key=None, match_key=None):
+
+    item_idxs = range(len(items))
+
+    if item_key:
+        items_idxs.sort(key=lambda i: item_key(items[i]))
+
+    capacities = bins[:]
+
+    mapping = [None] * len(items)
+
+    # FIXME: what if no good bins?
+    for i in item_idxs:
+        b = max((b for b in bin_idxs if items[i] <= capacities[b]), 
+                key=lambda b: match_key(items[i], capacities[b]))
+        if b:
+            mapping[i] = b
+            capacities[b] -= items[i]
+
+    return mapping
 
 def pack_select_by_bins(items=None, bins=None, item_key=None, match_key=None):
 
