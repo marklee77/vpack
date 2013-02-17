@@ -15,14 +15,14 @@
 # frobenius norm?
 
 sorts = {
-    "asum"       : sum
-    "amax"       : max
-    "amaxratio"  : (lambda v: float(max(v)) / min(v)) # could also do scaling?
-    "amaxdiff"   : (lambda v: max(v) - min(v))
-    "none"       : None
-    "dsum"       : (lambda v: -sum(v))
-    "dmax"       : (lambda v: -max(v))
-    "dmaxtratio" : (lambda v: float(min(v)) / max(v)) # see above
+    "asum"       : sum,
+    "amax"       : max,
+    "amaxratio"  : (lambda v: float(max(v)) / min(v)), # could also do scaling?
+    "amaxdiff"   : (lambda v: max(v) - min(v)),
+    "none"       : None,
+    "dsum"       : (lambda v: -sum(v)),
+    "dmax"       : (lambda v: -max(v)),
+    "dmaxtratio" : (lambda v: float(min(v)) / max(v)), # see above
     "dmaxdiff"   : (lambda v: min(v) - max(v))
 }
 
@@ -38,7 +38,7 @@ def pack_first_fit_by_items(items=None, bins=None, item_key=None, bin_key=None):
     if item_key:
         items_idxs.sort(key=lambda i: item_key(items[i]))
 
-    if bin_key
+    if bin_key:
         bin_idxs.sort(key=lambda b: bin_key(bins[b]))
 
     capacities = bins[:]
@@ -46,10 +46,12 @@ def pack_first_fit_by_items(items=None, bins=None, item_key=None, bin_key=None):
     mapping = [None] * len(items)
 
     for i in item_idxs:
-        b = next(b for b in bin_idxs if items[i] <= capacities[b], None)
-        if b:
+        try:
+            b = next(b for b in bin_idxs if items[i] <= capacities[b])
             mapping[i] = b
             capacities[b] -= items[i]
+        except StopIteration:
+            return None
 
     return mapping
 
@@ -61,7 +63,7 @@ def pack_first_fit_by_bins(items=None, bins=None, item_key=None, bin_key=None):
     if item_key:
         items_idxs.sort(key=lambda i: item_key(items[i]))
 
-    if bin_key
+    if bin_key:
         bin_idxs.sort(key=lambda b: bin_key(bins[b]))
 
     capacities = bins[:]
@@ -71,19 +73,25 @@ def pack_first_fit_by_bins(items=None, bins=None, item_key=None, bin_key=None):
     for b in bin_idxs:
         i = 0
         while i < len(item_idxs):
-            i = next(j for j in item_idxs if items[j] <= capacities[b], None)
-        if i:
-            mapping[i] = b
-            capacities[b] -= items[i]
-            del items[i]
-        else:
-            i += 1
+            try:
+                i = next(i for i in range(i, len(item_idxs)) 
+                         if items[item_idxs[i]] <= capacities[b])
+                j = item_idxs[i]
+                mapping[j] = b
+                capacities[b] -= items[j]
+                del item_idxs[i]
+            except StopIteration:
+                i += 1
+
+    if len(item_idxs) > 0:
+        return None
 
     return mapping
 
 def pack_select_by_items(items=None, bins=None, item_key=None, match_key=None):
 
     item_idxs = range(len(items))
+    bin_idxs = range(len(bins))
 
     if item_key:
         items_idxs.sort(key=lambda i: item_key(items[i]))
@@ -92,15 +100,42 @@ def pack_select_by_items(items=None, bins=None, item_key=None, match_key=None):
 
     mapping = [None] * len(items)
 
-    # FIXME: what if no good bins?
     for i in item_idxs:
-        b = max((b for b in bin_idxs if items[i] <= capacities[b]), 
-                key=lambda b: match_key(items[i], capacities[b]))
-        if b:
+        try:
+            b = max((b for b in bin_idxs if items[i] <= capacities[b]), 
+                    key=lambda b: match_key(items[i], capacities[b]))
             mapping[i] = b
             capacities[b] -= items[i]
+        except ValueError:
+            return None
 
     return mapping
 
-def pack_select_by_bins(items=None, bins=None, item_key=None, match_key=None):
+def pack_select_by_bins(items=None, bins=None, bin_key=None, match_key=None):
 
+    item_idxs = range(len(items))
+    bin_idxs = range(len(bins))
+
+    if bin_key:
+        bin_idxs.sort(key=lambda b: bin_key(bins[b]))
+
+    mapping = [None] * len(items)
+
+    for b in bin_idxs:
+        i = 0
+        while i < len(item_idxs):
+            try:
+                i = max((i for i in range(i, len(item_idxs)) 
+                        if items[item_idxs[i]] <= capacities[b]),
+                        key=lambda i: match_key(items[item_idxs[i]], capacities[b]))
+                j = item_idxs[i]
+                mapping[j] = b
+                capacities[b] -= items[j]
+                del item_idxs[i]
+            except ValueError:
+                i += 1
+
+    if len(item_idxs) > 0:
+        return None
+
+    return mapping
