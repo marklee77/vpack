@@ -100,23 +100,23 @@ def pack_first_fit_by_boxes(items=None, boxes=None, item_key=None, box_key=None)
 def match_null(item=None, capacity=None):
     return None
 
-def compute_dimranks(box):
-    dims = range(len(box))
-    dims.sort(key=lambda x: (box[x], x))
-    dimranks = [None] * len(box)
-    for i in range(len(box)):
+# FIXME: memory cache? need to profile...
+def compute_dimorder(vector):
+    dims = range(len(vector))
+    dims.sort(key=lambda x: (vector[x], x))
+    return dims
+    
+def compute_dimranks(vector):
+    dims = compute_dimorder(vector)
+    dimranks = [None] * len(vector)
+    for i in range(len(dims)):
         dimranks[dims[i]] = i
     return dimranks
 
-def compute_dimorder(item):
-    dims = range(len(item))
-    dims.sort(key=lambda x: (item[x], x))
-    return dims
-    
 def match_dimorder(window, item, capacity):
-    item_dims = compute_dimorder(item)
-    box_dimranks = compute_dimranks(capacity)
-    return [box_dimranks[dim] for dim in item_dims[:window]]
+    dims = compute_dimorder(item)
+    dimranks = compute_dimranks(capacity)
+    return [dimranks[dim] for dim in dims[:window]]
 
 # FIXME: naming...
 def match_dimset(window, item, capacity):
