@@ -17,9 +17,16 @@
 # also, l n norm...numpy.linalg.norm
 # frobenius norm?
 
-# FIXME: clean up variable names, too many i's and bin is a reserved word
-
 # minor question: does first-fit offer real speed up over selection?
+
+# norms based on numpy.linalg.norm...
+# something like arctan dist from 45, but multidimensional
+
+# TODO:
+#   * documentation
+#   * problem instance generator & test runner
+#   * profiling, memcache, cython benefits
+#   * develop portfolio
 
 sorts = {
     "asum"       : sum,
@@ -81,16 +88,16 @@ def pack_first_fit_by_boxes(items=None, boxes=None, item_key=None, box_key=None)
 
     for b in box_idxs:
         i = 0
-        while i < len(item_idxs):
+        while True:
             try:
-                j = next(j for j in range(i, len(item_idxs))
+                i = next(j for j in range(i, len(item_idxs)) 
                          if (items[item_idxs[j]] <= capacities[b]).all())
-                k = item_idxs[j]
-                mapping[k] = b
-                capacities[b] -= items[k]
-                del item_idxs[j]
+                j = item_idxs[i]
+                mapping[j] = b
+                capacities[b] -= items[j]
+                del item_idxs[i]
             except StopIteration:
-                i += 1
+                break
 
     if len(item_idxs) > 0:
         return None
@@ -151,7 +158,7 @@ def pack_select_by_items(items=None, boxes=None, item_key=None, match_key=match_
 def pack_select_by_boxes(items=None, boxes=None, box_key=None, match_key=match_null):
     from numpy import array
 
-    item_idxs = range(len(items))
+    item_idxs = set(range(len(items)))
     box_idxs = range(len(boxes))
 
     if box_key:
@@ -161,19 +168,18 @@ def pack_select_by_boxes(items=None, boxes=None, box_key=None, match_key=match_n
 
     mapping = [None] * len(items)
 
+    # FIXME: potential for optimization by pre-filtering? profile first!
     for b in box_idxs:
-        i = 0
-        while i < len(item_idxs):
+        while True:
             try:
-                j = min((j for j in range(i, len(item_idxs)) 
-                        if (items[item_idxs[j]] <= capacities[b]).all()),
-                        key=lambda k: match_key(items[item_idxs[k]], capacities[b]))
-                k = item_idxs[j]
-                mapping[k] = b
-                capacities[b] -= items[k]
-                del item_idxs[j]
+                i = min((i for i in item_idxs 
+                        if (items[i] <= capacities[b]).all()),
+                        key=lambda i: match_key(items[i], capacities[b]))
+                mapping[i] = b
+                capacities[b] -= items[i]
+                item_idxs.remove(i)
             except ValueError:
-                i += 1
+                break
 
     if len(item_idxs) > 0:
         return None
