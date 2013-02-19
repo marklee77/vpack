@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 
-# here's something, any real reason to sort bins?
-# maybe just always assume bin key also looks at item?
-# okay, so for each way a sort and eval!
+# yes it's called bin packing, but bin is a reserved word and box isn't
 
 # item by item or bin by bin first fit
 # best fit requires some kind of match quality function
 # pp/cp basically works the same way, but the since we have to sort the items,
 # maybe it doesn't make so much sense...why not just evaluate quality of match
 # by maxdiff or something like that?
-
-# yes it's called bin packing, but bin is a reserved word and box isn't
 
 # assume numpy arrays
 
@@ -25,8 +21,12 @@
 # TODO:
 #   * documentation
 #   * problem instance generator & test runner
+#   * unit testing
+#   * initial benchmarking
 #   * profiling, memcache, cython benefits
 #   * develop portfolio
+#       - multithreaded with abort on find...
+
 
 sorts = {
     "asum"       : sum,
