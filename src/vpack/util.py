@@ -27,18 +27,30 @@
 #   * develop portfolio
 #       - multithreaded with abort on find...
 
+# FIXME: less C, more pythonic -- fewer indexes in, more zip...
+from numpy.linalg import norm
 
 sorts = {
     "asum"       : sum,
+    "al2"        : (lambda v: norm(v, ord=2)),
     "amax"       : max,
     "amaxratio"  : (lambda v: float(max(v)) / min(v)), # could also do scaling?
     "amaxdiff"   : (lambda v: max(v) - min(v)),
     "none"       : None,
     "dsum"       : (lambda v: -sum(v)),
+    "dl2"        : (lambda v: -norm(v, ord=2)),
     "dmax"       : (lambda v: -max(v)),
     "dmaxtratio" : (lambda v: float(min(v)) / max(v)), # see above
     "dmaxdiff"   : (lambda v: min(v) - max(v))
 }
+
+# matches
+# dim matching for pp/cp
+# same as sorts on cap - item
+#  * pick smallest sum is best fit
+#  * pick smallest maxration/maxdiff should be close to pp
+
+# look up min cover algo...
 
 # fixme don't actuall sort items...
 def pack_first_fit_by_items(items=None, boxes=None, item_key=None, box_key=None):
@@ -95,7 +107,7 @@ def pack_first_fit_by_boxes(items=None, boxes=None, item_key=None, box_key=None)
                 j = item_idxs[i]
                 mapping[j] = b
                 capacities[b] -= items[j]
-                del item_idxs[i]
+                del item_idxs[i] # faster way?
             except StopIteration:
                 break
 
@@ -185,3 +197,14 @@ def pack_select_by_boxes(items=None, boxes=None, box_key=None, match_key=match_n
         return None
 
     return mapping
+
+def verify_map(mapping, items, boxes):
+    if not boxes:
+        return False
+    allocs = [array([0] * len(box)) for box in boxes]
+    for i in range(mapping):
+        allocs[mapping[i]] += items[i]
+    if ((alloc <= box).all() for alloc, box in zip(allocs, boxes)).all():
+        return True
+    return False
+        
