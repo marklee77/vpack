@@ -28,6 +28,9 @@
 #       - multithreaded with abort on find...
 
 # FIXME: less C, more pythonic -- fewer indexes in, more zip...
+
+# FIXME: GLOBAL solution quality metrics...
+
 from numpy.linalg import norm
 
 sorts = {
@@ -143,7 +146,7 @@ def match_dimset(window, item, capacity):
     box_dimranks = set(compute_dimorder(capacity)[:window])
     return len(item_dims & box_dimranks)
 
-def pack_select_by_items(items=None, boxes=None, item_key=None, match_key=match_null):
+def pack_best_fit_by_items(items=None, boxes=None, item_key=None, match_key=match_null):
     from numpy import array
 
     item_idxs = range(len(items))
@@ -167,7 +170,7 @@ def pack_select_by_items(items=None, boxes=None, item_key=None, match_key=match_
 
     return mapping
 
-def pack_select_by_boxes(items=None, boxes=None, box_key=None, match_key=match_null):
+def pack_best_fit_by_boxes(items=None, boxes=None, box_key=None, match_key=match_null):
     from numpy import array
 
     item_idxs = set(range(len(items)))
