@@ -27,8 +27,6 @@
 #   * develop portfolio
 #       - multithreaded with abort on find...
 
-# FIXME: less C, more pythonic -- fewer indexes in, more zip...
-
 # FIXME: GLOBAL solution quality metrics...
 
 from numpy.linalg import norm
@@ -55,7 +53,6 @@ sorts = {
 
 # look up min cover algo...
 
-# fixme don't actuall sort items...
 def pack_first_fit_by_items(items=None, boxes=None, item_key=None, box_key=None):
     """ take items, map them to bins, return an array where each position
          represents the corresponding item and contains an index for the bin it
@@ -201,13 +198,45 @@ def pack_best_fit_by_boxes(items=None, boxes=None, box_key=None, match_key=match
 
     return mapping
 
+# repeatedly go through and pick the best match...largest complexity...
+# need to recalculate matchings with items for last selected bin...
+def pack_best_fit(items=None, boxes=None, box_key=None, match_key=match_null):
+    from numpy import array
+
+    item_idxs = set(range(len(items)))
+    box_idxs = range(len(boxes))
+
+    if box_key:
+        box_idxs.sort(key=lambda b: box_key(boxes[b]))
+
+    capacities = [array(b, copy=True) for b in boxes]
+
+    mapping = [None] * len(items)
+
+
+    #while True:
+    #    try:
+    #        b, i = min((i for i in item_idxs 
+    #                if (items[i] <= capacities[b]).all()),
+    #                key=lambda i: match_key(items[i], capacities[b]))
+    #        mapping[i] = b
+    #        capacities[b] -= items[i]
+    #        item_idxs.remove(i)
+    #    except ValueError:
+    #        break
+
+    if len(item_idxs) > 0:
+        return None
+
+    return mapping
+
 def verify_map(mapping, items, boxes):
     if not boxes:
         return False
     allocs = [array([0] * len(box)) for box in boxes]
     for i in range(mapping):
         allocs[mapping[i]] += items[i]
-    if ((alloc <= box).all() for alloc, box in zip(allocs, boxes)).all():
+    if ((alloc <= capacity).all() for alloc, capacity in zip(allocs, boxes)).all():
         return True
     return False
         
