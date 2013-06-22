@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from itertools import islice, product
 from numpy import array
 from numpy.linalg import norm
 
@@ -53,6 +54,8 @@ sorts = {
 # same as sorts on cap - item
 #  * pick smallest sum is best fit
 #  * pick smallest maxration/maxdiff should be close to pp
+
+# FIXME: should match functions get global state info?
 
 # FIXME: memory cache? need to profile...
 def compute_dimorder(vector):
@@ -151,11 +154,9 @@ def pack_first_fit_by_boxes(items=None, boxes=None, item_key=None, box_key=None)
         i = 0
         while True:
             try:
-                # FIXME: use enumerate + itertools.islice here and in next one...
-                # pythonic!
-                i = next(j for j in range(i, len(item_idxs)) # range worth it?
-                         if (items[item_idxs[j]] <= capacities[b]).all())
-                j = item_idxs[i]
+                i, j = next((x + i, y) for x, y in 
+                         enumerate(islice(item_idxs, i, None)
+                         if (items[y] <= capacities[b]).all())
                 mapping[j] = b
                 capacities[b] -= items[j]
                 del item_idxs[i] 
@@ -183,11 +184,11 @@ def pack_best_fit_by_boxes(items=None, boxes=None, box_key=None, match_key=match
         while True:
             try:
                 i = min((i for i in item_idxs 
-                        if (items[i] <= capacities[b]).all()),
+                         if (items[i] <= capacities[b]).all()),
                         key=lambda i: match_key(items[i], capacities[b]))
                 mapping[i] = b
                 capacities[b] -= items[i]
-                item_idxs.remove(i) # gah...
+                item_idxs.remove(i) # fast because this is a set!
             except ValueError:
                 break
 
@@ -209,12 +210,12 @@ def pack_best_fit(items=None, boxes=None, box_key=None, match_key=match_null):
 
     while True:
         try:
-            b, i = min(((b, i) for b, i in itertools.product(box_idxs, item_idxs)
-                       if (items[i] <= capacities[b]).all()),
-                       key=lambda i: match_key(items[i], capacities[b]))
+            b, i = min(((b, i) for b, i in product(box_idxs, item_idxs) 
+                        if (items[i] <= capacities[b]).all()),
+                       key=lambda b, i: match_key(items[i], capacities[b]))
             mapping[i] = b
             capacities[b] -= items[i]
-            item_idxs.remove(i)
+            item_idxs.remove(i) # fast because this is a set!
         except ValueError:
             break
 
@@ -222,15 +223,3 @@ def pack_best_fit(items=None, boxes=None, box_key=None, match_key=match_null):
         return None
 
     return mapping
-
-# move to test?
-def verify_map(mapping, items, boxes):
-    if not boxes:
-        return False
-    allocs = [array([0] * len(box)) for box in boxes]
-    for i in range(mapping):
-        allocs[mapping[i]] += items[i]
-    if ((alloc <= capacity).all() for alloc, capacity in zip(allocs, boxes)).all():
-        return True
-    return False
-
