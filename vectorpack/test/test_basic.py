@@ -50,6 +50,34 @@ class BasicTests(unittest.TestCase):
         self.assertEqual(
             util.pack_first_fit_by_items(items=items, boxes=boxes),
             [0, 0, 0, 0])
+
+    def test_first_fit_by_boxes_no_sorts(self):
+        items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
+        boxes = [array([6, 6])]
+        self.assertEqual(
+            util.pack_first_fit_by_boxes(items=items, boxes=boxes),
+            [0, 0, 0, 0])
+
+    def test_best_fit_by_items_no_sorts(self):
+        items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
+        boxes = [array([6, 6])]
+        self.assertEqual(
+            util.pack_best_fit_by_items(items=items, boxes=boxes),
+            [0, 0, 0, 0])
+
+    def test_best_fit_by_boxes_no_sorts(self):
+        items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
+        boxes = [array([6, 6])]
+        self.assertEqual(
+            util.pack_best_fit_by_boxes(items=items, boxes=boxes),
+            [0, 0, 0, 0])
+
+    def test_best_fit_no_sorts(self):
+        items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
+        boxes = [array([6, 6])]
+        self.assertEqual(
+            util.pack_best_fit(items=items, boxes=boxes),
+            [0, 0, 0, 0])
          
 
 def main():

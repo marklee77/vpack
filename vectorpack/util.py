@@ -154,8 +154,7 @@ def pack_first_fit_by_boxes(items=None, boxes=None, item_key=None, box_key=None)
         i = 0
         while True:
             try:
-                i, j = next((x + i, y) for x, y in 
-                         enumerate(islice(item_idxs, i, None)
+                i, j = next((x + i, y) for x, y in enumerate(islice(item_idxs, i, None))
                          if (items[y] <= capacities[b]).all())
                 mapping[j] = b
                 capacities[b] -= items[j]
@@ -212,7 +211,7 @@ def pack_best_fit(items=None, boxes=None, box_key=None, match_key=match_null):
         try:
             b, i = min(((b, i) for b, i in product(box_idxs, item_idxs) 
                         if (items[i] <= capacities[b]).all()),
-                       key=lambda b, i: match_key(items[i], capacities[b]))
+                       key=lambda x: match_key(items[x[1]], capacities[x[0]]))
             mapping[i] = b
             capacities[b] -= items[i]
             item_idxs.remove(i) # fast because this is a set!
