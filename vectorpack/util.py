@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from numpy import array
+from numpy.linalg import norm
 
 # yes it's called bin packing, but bin is a reserved word and box isn't
 
@@ -29,7 +31,6 @@
 
 # FIXME: GLOBAL solution quality metrics...
 
-from numpy.linalg import norm
 
 sorts = {
     "asum"       : sum,
@@ -45,79 +46,13 @@ sorts = {
     "dmaxdiff"   : (lambda v: min(v) - max(v))
 }
 
+# look up min cover algo...
+
 # matches
 # dim matching for pp/cp
 # same as sorts on cap - item
 #  * pick smallest sum is best fit
 #  * pick smallest maxration/maxdiff should be close to pp
-
-# look up min cover algo...
-
-def pack_first_fit_by_items(items=None, boxes=None, item_key=None, box_key=None):
-    """ take items, map them to bins, return an array where each position
-         represents the corresponding item and contains an index for the bin it
-         should be packed in... """
-    from numpy import array
-
-    item_idxs = range(len(items))
-    box_idxs = range(len(boxes))
-
-    if item_key:
-        item_idxs.sort(key=lambda i: item_key(items[i]))
-
-    if box_key:
-        box_idxs.sort(key=lambda b: box_key(boxes[b]))
-
-    capacities = [array(b, copy=True) for b in boxes]
-
-    mapping = [None] * len(items)
-
-    for i in item_idxs:
-        try:
-            b = next(b for b in box_idxs if (items[i] <= capacities[b]).all())
-            mapping[i] = b
-            capacities[b] -= items[i]
-        except StopIteration:
-            return None
-
-    return mapping
-
-def pack_first_fit_by_boxes(items=None, boxes=None, item_key=None, box_key=None):
-    from numpy import array
-
-    item_idxs = range(len(items))
-    box_idxs = range(len(boxes))
-
-    if item_key:
-        item_idxs.sort(key=lambda i: item_key(items[i]))
-
-    if box_key:
-        box_idxs.sort(key=lambda b: box_key(boxes[b]))
-
-    capacities = [array(b, copy=True) for b in boxes]
-
-    mapping = [None] * len(items)
-
-    for b in box_idxs:
-        i = 0
-        while True:
-            try:
-                i = next(j for j in range(i, len(item_idxs)) 
-                         if (items[item_idxs[j]] <= capacities[b]).all())
-                j = item_idxs[i]
-                mapping[j] = b
-                capacities[b] -= items[j]
-                del item_idxs[i] # faster way?
-            except StopIteration:
-                break
-
-    if len(item_idxs) > 0:
-        return None
-
-    return mapping
-
-def match_null(item=None, capacity=None):
-    return None
 
 # FIXME: memory cache? need to profile...
 def compute_dimorder(vector):
@@ -143,8 +78,38 @@ def match_dimset(window, item, capacity):
     box_dimranks = set(compute_dimorder(capacity)[:window])
     return len(item_dims & box_dimranks)
 
+def match_null(item=None, capacity=None):
+    return None
+
+def pack_first_fit_by_items(items=None, boxes=None, item_key=None, box_key=None):
+    """ take items, map them to bins, return an array where each position
+         represents the corresponding item and contains an index for the bin it
+         should be packed in... """
+
+    item_idxs = range(len(items))
+    box_idxs = range(len(boxes))
+
+    if item_key:
+        item_idxs.sort(key=lambda i: item_key(items[i]))
+
+    if box_key:
+        box_idxs.sort(key=lambda b: box_key(boxes[b]))
+
+    capacities = [array(b, copy=True) for b in boxes]
+
+    mapping = [None] * len(items)
+
+    for i in item_idxs:
+        try:
+            b = next(b for b in box_idxs if (items[i] <= capacities[b]).all())
+            mapping[i] = b
+            capacities[b] -= items[i]
+        except StopIteration:
+            return None
+
+    return mapping
+
 def pack_best_fit_by_items(items=None, boxes=None, item_key=None, match_key=match_null):
-    from numpy import array
 
     item_idxs = range(len(items))
     box_idxs = range(len(boxes))
@@ -167,8 +132,42 @@ def pack_best_fit_by_items(items=None, boxes=None, item_key=None, match_key=matc
 
     return mapping
 
+def pack_first_fit_by_boxes(items=None, boxes=None, item_key=None, box_key=None):
+
+    item_idxs = range(len(items))
+    box_idxs = range(len(boxes))
+
+    if item_key:
+        item_idxs.sort(key=lambda i: item_key(items[i]))
+
+    if box_key:
+        box_idxs.sort(key=lambda b: box_key(boxes[b]))
+
+    capacities = [array(b, copy=True) for b in boxes]
+
+    mapping = [None] * len(items)
+
+    for b in box_idxs:
+        i = 0
+        while True:
+            try:
+                # FIXME: use enumerate + itertools.islice here and in next one...
+                # pythonic!
+                i = next(j for j in range(i, len(item_idxs)) # range worth it?
+                         if (items[item_idxs[j]] <= capacities[b]).all())
+                j = item_idxs[i]
+                mapping[j] = b
+                capacities[b] -= items[j]
+                del item_idxs[i] 
+            except StopIteration:
+                break
+
+    if len(item_idxs) > 0:
+        return None
+
+    return mapping
+
 def pack_best_fit_by_boxes(items=None, boxes=None, box_key=None, match_key=match_null):
-    from numpy import array
 
     item_idxs = set(range(len(items)))
     box_idxs = range(len(boxes))
@@ -180,7 +179,6 @@ def pack_best_fit_by_boxes(items=None, boxes=None, box_key=None, match_key=match
 
     mapping = [None] * len(items)
 
-    # FIXME: potential for optimization by pre-filtering? profile first!
     for b in box_idxs:
         while True:
             try:
@@ -189,7 +187,7 @@ def pack_best_fit_by_boxes(items=None, boxes=None, box_key=None, match_key=match
                         key=lambda i: match_key(items[i], capacities[b]))
                 mapping[i] = b
                 capacities[b] -= items[i]
-                item_idxs.remove(i)
+                item_idxs.remove(i) # gah...
             except ValueError:
                 break
 
@@ -201,35 +199,31 @@ def pack_best_fit_by_boxes(items=None, boxes=None, box_key=None, match_key=match
 # repeatedly go through and pick the best match...largest complexity...
 # need to recalculate matchings with items for last selected bin...
 def pack_best_fit(items=None, boxes=None, box_key=None, match_key=match_null):
-    from numpy import array
 
     item_idxs = set(range(len(items)))
     box_idxs = range(len(boxes))
-
-    if box_key:
-        box_idxs.sort(key=lambda b: box_key(boxes[b]))
 
     capacities = [array(b, copy=True) for b in boxes]
 
     mapping = [None] * len(items)
 
-
-    #while True:
-    #    try:
-    #        b, i = min((i for i in item_idxs 
-    #                if (items[i] <= capacities[b]).all()),
-    #                key=lambda i: match_key(items[i], capacities[b]))
-    #        mapping[i] = b
-    #        capacities[b] -= items[i]
-    #        item_idxs.remove(i)
-    #    except ValueError:
-    #        break
+    while True:
+        try:
+            b, i = min(((b, i) for b, i in itertools.product(box_idxs, item_idxs)
+                       if (items[i] <= capacities[b]).all()),
+                       key=lambda i: match_key(items[i], capacities[b]))
+            mapping[i] = b
+            capacities[b] -= items[i]
+            item_idxs.remove(i)
+        except ValueError:
+            break
 
     if len(item_idxs) > 0:
         return None
 
     return mapping
 
+# move to test?
 def verify_map(mapping, items, boxes):
     if not boxes:
         return False
@@ -239,4 +233,4 @@ def verify_map(mapping, items, boxes):
     if ((alloc <= capacity).all() for alloc, capacity in zip(allocs, boxes)).all():
         return True
     return False
-        
+
