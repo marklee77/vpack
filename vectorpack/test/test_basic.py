@@ -4,27 +4,6 @@ from numpy import array
 
 from vectorpack import packs
 
-#print packs.pack_first_fit_by_items(items=items, boxes=boxes, 
-#                                   item_key=lambda i: -sum(i))
-#print packs.pack_first_fit_by_boxes(items=items, boxes=boxes, 
-#                                   item_key=lambda i: -sum(i))
-#print packs.pack_select_by_items(items=items, boxes=boxes, 
-#                                item_key=lambda i: -sum(i),
-#                                match_key=lambda i, c: sum(c - i))
-#print packs.pack_select_by_boxes(items=items, boxes=boxes, 
-#                                match_key=lambda i, c: sum(c - i))
-
-
-#print packs.pack_select_by_items(items=items, boxes=boxes, item_key=lambda i: -sum(i),
-#                                match_key=lambda i, c: (ppw1_key(i, c), sum(c - i)))
-#print packs.pack_select_by_boxes(items=items, boxes=boxes, box_key=sum,
-#                                match_key=lambda i, c: (ppw1_key(i, c), sum(c - i)))
-
-#print packs.pack_first_fit_by_boxes(items=items, boxes=boxes)
-#print packs.pack_select_by_items(items=items, boxes=boxes)
-#print packs.pack_select_by_boxes(items=items, boxes=boxes)
-
-
 # FIXME: move to util.py?
 def verify_map(mapping, items, boxes):
     if not boxes:
