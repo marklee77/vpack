@@ -111,4 +111,3 @@ def choose_pack(
         item_key(item))
     return packs.pack_best_fit_by_boxes(
         items=items, boxes=boxes, box_key=box_key, select_key=select_key)
-
