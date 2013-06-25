@@ -2,6 +2,7 @@
 from itertools import islice, product
 from numpy import array
 from numpy.linalg import norm
+from profilehooks import profile
 
 # yes it's called bin packing, but bin is a reserved word and box isn't
 
@@ -135,6 +136,7 @@ def pack_best_fit_by_items(items=None, boxes=None, item_key=None, match_key=matc
 
     return mapping
 
+@profile
 def pack_first_fit_by_boxes(items=None, boxes=None, item_key=None, box_key=None):
 
     item_idxs = range(len(items))
