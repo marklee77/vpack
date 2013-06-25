@@ -1,4 +1,4 @@
-from packs import best_fit_by_bins
+import packs
 
 """
 Some notes:
@@ -106,31 +106,35 @@ def pp_select(item=None, capacity=None, window_size=None):
         return None
     r2d_c = rank_to_dimension(capacity)
     d2r_i = dimension_to_rank(item)
-    return [d2r_i[d] for d in r2d_c[:window]]
+    return [d2r_i[d] for d in r2d_c[:window_size]]
 
 # FIXME: memcache?
-def cp_select(item=None, capacity=None, window=None):
+def cp_select(item=None, capacity=None, window_size=None):
     if window_size is None:
         window_size = len(capacity)
     elif window_size == 0:
         return None
-    largest_capacity_dims = set(rank_to_dimension(capacity)[:window])
-    largest_item_dims = set(rank_to_dimension(item)[:window])
+    largest_capacity_dims = set(rank_to_dimension(capacity)[:window_size])
+    largest_item_dims = set(rank_to_dimension(item)[:window_size])
     return -len(largest_capacity_dims & largest_item_dims)
 
 def permutation_pack(
     items=None, boxes=None, item_key=None, box_key=None, window_size=None):
+    if item_key is None:
+        item_key = lambda x: 0
     select_key = lambda item, capacity: (
-        pp_select(item=item, capacity=capacity, window_size=window_size, 
+        pp_select(item=item, capacity=capacity, window_size=window_size),
         item_key(item))
-    return pack_best_fit_by_boxes(
+    return packs.pack_best_fit_by_boxes(
         items=items, boxes=boxes, box_key=box_key, select_key=select_key)
 
 def choose_pack(
     items=None, boxes=None, item_key=None, box_key=None, window_size=None):
+    if item_key is None:
+        item_key = lambda x: 0
     select_key = lambda item, capacity: (
-        cp_select(item=item, capacity=capacity, window_size=window_size, 
+        cp_select(item=item, capacity=capacity, window_size=window_size),
         item_key(item))
-    return pack_best_fit_by_boxes(
+    return packs.pack_best_fit_by_boxes(
         items=items, boxes=boxes, box_key=box_key, select_key=select_key)
 

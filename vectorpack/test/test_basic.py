@@ -1,36 +1,31 @@
 import unittest
+
 from numpy import array
-from functools import partial
-from vectorpack import util
 
+from vectorpack import packs
 
-#print util.pack_first_fit_by_items(items=items, boxes=boxes)
-#print util.pack_first_fit_by_boxes(items=items, boxes=boxes)
-#print util.pack_select_by_items(items=items, boxes=boxes)
-#print util.pack_select_by_boxes(items=items, boxes=boxes)
-
-#print util.pack_first_fit_by_items(items=items, boxes=boxes, 
+#print packs.pack_first_fit_by_items(items=items, boxes=boxes, 
 #                                   item_key=lambda i: -sum(i))
-#print util.pack_first_fit_by_boxes(items=items, boxes=boxes, 
+#print packs.pack_first_fit_by_boxes(items=items, boxes=boxes, 
 #                                   item_key=lambda i: -sum(i))
-#print util.pack_select_by_items(items=items, boxes=boxes, 
+#print packs.pack_select_by_items(items=items, boxes=boxes, 
 #                                item_key=lambda i: -sum(i),
 #                                match_key=lambda i, c: sum(c - i))
-#print util.pack_select_by_boxes(items=items, boxes=boxes, 
+#print packs.pack_select_by_boxes(items=items, boxes=boxes, 
 #                                match_key=lambda i, c: sum(c - i))
 
 
-# boxes = [array([1, 1]), array([2, 2]), array([3, 3])]
-#ppw1_key = partial(util.match_dimorder, 1)
-#print util.pack_select_by_items(items=items, boxes=boxes, item_key=lambda i: -sum(i),
+#print packs.pack_select_by_items(items=items, boxes=boxes, item_key=lambda i: -sum(i),
 #                                match_key=lambda i, c: (ppw1_key(i, c), sum(c - i)))
-#print util.pack_select_by_boxes(items=items, boxes=boxes, box_key=sum,
+#print packs.pack_select_by_boxes(items=items, boxes=boxes, box_key=sum,
 #                                match_key=lambda i, c: (ppw1_key(i, c), sum(c - i)))
 
-#print util.pack_first_fit_by_boxes(items=items, boxes=boxes)
-#print util.pack_select_by_items(items=items, boxes=boxes)
-#print util.pack_select_by_boxes(items=items, boxes=boxes)
+#print packs.pack_first_fit_by_boxes(items=items, boxes=boxes)
+#print packs.pack_select_by_items(items=items, boxes=boxes)
+#print packs.pack_select_by_boxes(items=items, boxes=boxes)
 
+
+# FIXME: move to util.py?
 def verify_map(mapping, items, boxes):
     if not boxes:
         return False
@@ -44,40 +39,65 @@ def verify_map(mapping, items, boxes):
 
 class BasicTests(unittest.TestCase):
     
-    def test_first_fit_by_items_no_sorts(self):
+    def test_first_fit_by_items(self):
         items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
         boxes = [array([6, 6])]
         self.assertEqual(
-            util.pack_first_fit_by_items(items=items, boxes=boxes),
+            packs.pack_first_fit_by_items(items=items, boxes=boxes),
             [0, 0, 0, 0])
+        boxes = [array([1, 1]), array([2, 2]), array([3, 3])]
+        self.assertEqual(
+            packs.pack_first_fit_by_items(items=items, boxes=boxes, 
+                                          item_key=lambda i: -sum(i)),
+            [0, 2, 2, 1])
 
-    def test_first_fit_by_boxes_no_sorts(self):
+    def test_first_fit_by_boxes(self):
         items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
         boxes = [array([6, 6])]
         self.assertEqual(
-            util.pack_first_fit_by_boxes(items=items, boxes=boxes),
+            packs.pack_first_fit_by_boxes(items=items, boxes=boxes),
             [0, 0, 0, 0])
+        boxes = [array([1, 1]), array([2, 2]), array([3, 3])]
+        self.assertEqual(
+            packs.pack_first_fit_by_boxes(items=items, boxes=boxes, 
+                                          item_key=lambda i: -sum(i)),
+            [0, 2, 2, 1])
 
-    def test_best_fit_by_items_no_sorts(self):
-        items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
+    def test_best_fit_by_items(self):
+        items = [array([1, 1]), array([2, 2]), array([2, 1]), array([1, 2])]
         boxes = [array([6, 6])]
         self.assertEqual(
-            util.pack_best_fit_by_items(items=items, boxes=boxes),
+            packs.pack_best_fit_by_items(items=items, boxes=boxes),
             [0, 0, 0, 0])
+        boxes = [array([1, 1]), array([2, 2]), array([3, 3])]
+        self.assertEqual(
+            packs.pack_best_fit_by_items(items=items, boxes=boxes, 
+                                          select_key=lambda i, c: sum(c - i)),
+            [0, 1, 2, 2])
 
     def test_best_fit_by_boxes_no_sorts(self):
-        items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
+        items = [array([1, 1]), array([2, 2]), array([2, 1]), array([1, 2])]
         boxes = [array([6, 6])]
         self.assertEqual(
-            util.pack_best_fit_by_boxes(items=items, boxes=boxes),
+            packs.pack_best_fit_by_boxes(items=items, boxes=boxes),
             [0, 0, 0, 0])
+        boxes = [array([1, 1]), array([2, 2]), array([3, 3])]
+        self.assertEqual(
+            packs.pack_best_fit_by_boxes(items=items, boxes=boxes, 
+                                          select_key=lambda i, c: sum(c - i)),
+            [0, 1, 2, 2])
 
     def test_best_fit_no_sorts(self):
         items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
         boxes = [array([6, 6])]
         self.assertEqual(
-            util.pack_best_fit(items=items, boxes=boxes),
+            packs.pack_best_fit(items=items, boxes=boxes),
             [0, 0, 0, 0])
+        boxes = [array([1, 1]), array([2, 2]), array([3, 3])]
+        self.assertEqual(
+            packs.pack_best_fit(items=items, boxes=boxes, 
+                                          select_key=lambda i, c: sum(c - i)),
+            [0, 2, 2, 1])
          
 
 def main():
