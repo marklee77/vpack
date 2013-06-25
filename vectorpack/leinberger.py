@@ -3,34 +3,6 @@ import packs
 """
 Some notes:
 
-    r2d         d2r        S?
-    -------     -------    --
-    0 1 2 3     0 1 2 3    Y
-    0 1 3 2     0 1 3 2    Y
-    0 2 1 3     0 2 1 3    Y
-    0 2 3 1     0 3 1 2    -
-    0 3 1 2     0 2 3 1    -
-    0 3 2 1     0 3 2 1    Y
-    1 0 2 3     1 0 2 3    Y
-    1 0 3 2     1 0 3 2    Y
-    1 2 0 3     2 0 1 3    -
-    1 2 3 0     3 0 1 2    -
-    1 3 0 2     2 0 3 1    -
-    1 3 2 0     3 0 2 1    -
-    2 0 1 3     1 2 0 3    -
-    2 0 3 1     1 3 0 2    -
-    2 1 0 3     2 1 0 3    Y
-    2 1 3 0     3 1 0 2    -
-    2 3 0 1     2 3 0 1    Y
-    2 3 1 0     3 2 0 1    -
-    3 0 1 2     1 2 3 0    -
-    3 0 2 1     1 3 2 0    -
-    3 1 0 2     2 1 3 0    -
-    3 1 2 0     3 1 2 0    Y
-    3 2 0 1     2 3 1 0    -
-    3 2 1 0     3 2 1 0    Y
-
-
     suppose bin as 
 
     r2d_c 1 3 0 2 then d2r_c 2 0 3 1
@@ -66,6 +38,9 @@ Some notes:
     0 2 3 1  2 3 1 0       0 3 1 2  3 2 0 1
     2 0 3 1  3 2 1 0       1 3 0 2  3 2 1 0
     
+    d2r_i[r2d_c] seems better, as it preserves largest positioning first,
+    then within each block of 6 preserves 2nd largest next...
+
 """
 
 
@@ -89,13 +64,12 @@ def rank_to_dimension(v):
     
 # FIXME: memcache?
 def dimension_to_rank(v):
-    """ Provide map that is reverse of above, e.g., can be used to go from a
+    """ Provide map that is inverse of above, e.g., can be used to go from a
         dimension number to a rank for that dimension
     """
-    r2d = rank_to_dimension(v)
     d2r = [None] * len(v)
-    for i in range(len(r2d)):
-        d2r[r2d[i]] = i
+    for r, d in enumerate(rank_to_dimension(v)):
+        d2r[d] = r
     return d2r
 
 # FIXME: memcache?
