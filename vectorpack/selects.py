@@ -1,6 +1,6 @@
 from functools import partial
-from joblib import Memory
-from numpy import argsort
+from hashlib import sha1
+from numpy import uint8
 
 def pairkey_null(v1, v2):
     return 0
@@ -56,23 +56,24 @@ Some notes:
     with items that are largest in those dimensions
 """
 
+# alternative memoize func...
 def memoizenp(function):
     cache = {}
     def decorated_function(*args):
-        argshash = ','.join(a.tostring() for a in args)
-        print(argshash)
-        #if argshash in cache:
-        #    print('cached')
-        #    return cache[argshash]
-        #else:
-        #    print('not cached')
+        #argshash = tuple(int(sha1(a.view(uint8)).hexdigest(), 16) for a in args)
+        argshash = int(sha1(args[0].view(uint8)).hexdigest(), 16)
+        if argshash in cache:
+            #print('cached')
+            return cache[argshash]
+        else:
+            #print('not cached')
             val = function(*args)
-        #    cache[argshash] = val
+            cache[argshash] = val
             return val
     return decorated_function
 
 # FIXME: memcache?
-@memoizenp
+#@memoizenp
 def rank_to_dimension(v):
     """ compute the ordering on dimensions based on their size.
         e.g., for a 3D array [2, 0, 1] means that the dimension 2 has the
@@ -82,10 +83,9 @@ def rank_to_dimension(v):
         stable sort. 
     """
     return sorted(range(len(v)), key=lambda d: (-v[d], d)) # stable sort
-    # argsort slower, unstable, wrong keys...
-    #return argsort(v) # stable sort
     
 # FIXME: memcache?
+#@memoizenp
 def dimension_to_rank(v):
     """ Provide map that is inverse of above, e.g., can be used to go from a
         dimension number to a rank for that dimension

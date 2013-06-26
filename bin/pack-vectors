@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import cProfile
+from numpy import array
 from vectorpack.packs import get_pack_names, get_pack
 from vectorpack.sorts import get_sort_names, get_sort
 from vectorpack.selects import get_select_names, get_select
@@ -9,12 +10,18 @@ def main(argv=None):
     from argparse import ArgumentParser
     from os.path import isfile
     from sys import stdin, stdout
-    from yaml import load as yload
+    from yaml import load as yload, dump as ydump
 
     try:
         from yaml import CLoader as YLoader
     except ImportError:
         from yaml import Loader as YLoader
+
+    try:
+        from yaml import CDumper as YDumper
+    except ImportError:
+        from yaml import YDumper
+
 
     packnames = get_pack_names()
     sortnames = get_sort_names()
@@ -40,17 +47,25 @@ def main(argv=None):
     else:
         raise SystemExit("error: can't find file %s" % args.inputfile)
 
-    items = problem.get('items', None)
-    boxes = problem.get('boxes', None)
+    items = array(problem.get('items', None))
+    boxes = array(problem.get('boxes', None))
     pack = get_pack(args.pack)
     itemsort = get_sort(args.itemsort)
     binsort = get_sort(args.binsort)
     select = get_select(args.select)
 
-    mapping = pack(items=items, boxes=boxes, item_key=itemsort, box_key=binsort, pair_key=select)
+    solution = {
+        'pack' : args.pack,
+        'itemsort' : args.itemsort,
+        'binsort' : args.binsort,
+        'select' : args.select,
+        'mapping' : pack(items=items, boxes=boxes, item_key=itemsort, 
+                         box_key=binsort, pair_key=select)
+    }
+
+    print(ydump(solution, Dumper=YDumper))
     
-    print(mapping)
-    print(verify_mapping(items=items, boxes=boxes, mapping=mapping))
+    #print(verify_mapping(items=items, boxes=boxes, mapping=mapping))
 
 if __name__ == "__main__":
     main() 
