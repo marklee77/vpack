@@ -18,6 +18,7 @@ def verify_map(mapping, items, boxes):
 
 class BasicTests(unittest.TestCase):
     
+    # FIXME: write tests to fail on null...
     def test_first_fit_by_items(self):
         items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
         boxes = [array([6, 6])]
@@ -51,10 +52,10 @@ class BasicTests(unittest.TestCase):
         boxes = [array([1, 1]), array([2, 2]), array([3, 3])]
         self.assertEqual(
             packs.pack_best_fit_by_items(items=items, boxes=boxes, 
-                                          select_key=lambda i, c: sum(c - i)),
+                                          pair_key=lambda i, c: sum(c - i)),
             [0, 1, 2, 2])
 
-    def test_best_fit_by_boxes_no_sorts(self):
+    def test_best_fit_by_boxes(self):
         items = [array([1, 1]), array([2, 2]), array([2, 1]), array([1, 2])]
         boxes = [array([6, 6])]
         self.assertEqual(
@@ -63,10 +64,10 @@ class BasicTests(unittest.TestCase):
         boxes = [array([1, 1]), array([2, 2]), array([3, 3])]
         self.assertEqual(
             packs.pack_best_fit_by_boxes(items=items, boxes=boxes, 
-                                          select_key=lambda i, c: sum(c - i)),
+                                          pair_key=lambda i, c: sum(c - i)),
             [0, 1, 2, 2])
 
-    def test_best_fit_no_sorts(self):
+    def test_best_fit(self):
         items = [array([1, 1]), array([1, 2]), array([2, 1]), array([2, 2])]
         boxes = [array([6, 6])]
         self.assertEqual(
@@ -75,7 +76,7 @@ class BasicTests(unittest.TestCase):
         boxes = [array([1, 1]), array([2, 2]), array([3, 3])]
         self.assertEqual(
             packs.pack_best_fit(items=items, boxes=boxes, 
-                                          select_key=lambda i, c: sum(c - i)),
+                                          pair_key=lambda i, c: sum(c - i)),
             [0, 2, 2, 1])
          
 

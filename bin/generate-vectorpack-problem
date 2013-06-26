@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+# FIXME: theoretically, slack and load should be vectors?
+
+def main(argv=None):
+    from argparse import ArgumentParser
+    import random
+    from yaml import dump
+    try:
+        from yaml import CDumper as Dumper
+    except ImportError:
+        from yaml import Dumper
+
+    parser = ArgumentParser(description="Generat a random problem instance.")
+    parser.add_argument('-s', '--seed', type=int, help='seed for random number generator')
+    parser.add_argument('-d', '--num_dimensions', type=int, help='number of dimensions')
+    parser.add_argument('-b', '--num_boxes', type=int, help='number of boxes')
+    parser.add_argument('-i', '--num_items', type=int, help='number of items')
+    parser.add_argument('-c', '--cov', type=float, help='box dimension cov')
+    parser.add_argument('-k', '--slack', type=float, help='slack')
+
+    args = parser.parse_args()
+
+    random.seed(args.seed) 
+
+    boxes = [[max(0.001, min(random.normalvariate(0.5, 0.5 * args.cov), 1.0))
+              for i in range(args.num_dimensions)]
+              for j in range(args.num_boxes)]
+
+    boxdim_totals = [sum(box[i] for box in boxes) 
+                     for i in range(args.num_dimensions)]
+
+    items = [[random.random() for i in range(args.num_dimensions)] 
+             for j in range(args.num_items)]
+    itemdim_totals = [sum(item[i] for item in items)
+                      for i in range(args.num_dimensions)]
+
+    for item in items:
+        for i in range(args.num_dimensions):
+            item[i] *= (1.0 - args.slack) * boxdim_totals[i] / itemdim_totals[i]
+
+    print dump({'args' : vars(args)}, Dumper=Dumper),
+    print dump({'boxes' : boxes }, Dumper=Dumper),
+    print dump({'items' : items }, Dumper=Dumper),
+
+if __name__ == "__main__":
+    main()

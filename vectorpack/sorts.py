@@ -13,3 +13,9 @@ SORTS_BY_NAME = {
     "dmaxtratio" : (lambda v: float(min(v)) / max(v)),
     "dmaxdiff"   : (lambda v: min(v) - max(v))
 }
+
+def get_sort_names():
+    return SORTS_BY_NAME.keys()
+
+def get_sort(name):
+    return SORTS_BY_NAME.get(name, None)

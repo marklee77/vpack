@@ -1,4 +1,5 @@
-import packs
+from packs import pack_best_fit_by_boxes, key_null, pairkey_null
+from functools import partial
 
 """
 Some notes:
@@ -93,21 +94,15 @@ def cp_select(item=None, capacity=None, window_size=None):
     return -len(largest_capacity_dims & largest_item_dims)
 
 def permutation_pack(
-    items=None, boxes=None, item_key=None, box_key=None, window_size=None):
-    if item_key is None:
-        item_key = lambda x: 0
-    select_key = lambda item, capacity: (
-        pp_select(item=item, capacity=capacity, window_size=window_size),
-        item_key(item))
-    return packs.pack_best_fit_by_boxes(
-        items=items, boxes=boxes, box_key=box_key, select_key=select_key)
+    items=None, boxes=None, item_key=key_null, box_key=key_null, 
+    window_size=None):
+    pair_key = partial(pp_select, window_size=window_size)
+    return pack_best_fit_by_boxes(
+        items=items, boxes=boxes, box_key=box_key, pair_key=pair_key)
 
 def choose_pack(
-    items=None, boxes=None, item_key=None, box_key=None, window_size=None):
-    if item_key is None:
-        item_key = lambda x: 0
-    select_key = lambda item, capacity: (
-        cp_select(item=item, capacity=capacity, window_size=window_size),
-        item_key(item))
-    return packs.pack_best_fit_by_boxes(
-        items=items, boxes=boxes, box_key=box_key, select_key=select_key)
+    items=None, boxes=None, item_key=key_null, box_key=key_null, 
+    window_size=None):
+    pair_key = partial(cp_select, window_size=window_size)
+    return pack_best_fit_by_boxes(
+        items=items, boxes=boxes, box_key=box_key, pair_key=pair_key)
