@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import cProfile
 from vectorpack.packs import get_pack_names, get_pack
 from vectorpack.sorts import get_sort_names, get_sort
 from vectorpack.selects import get_select_names, get_select
@@ -46,11 +47,10 @@ def main(argv=None):
     binsort = get_sort(args.binsort)
     select = get_select(args.select)
 
-    mapping = pack(items=items, boxes=boxes, item_key=itemsort, box_key=binsort,
-               pair_key=select)
+    mapping = pack(items=items, boxes=boxes, item_key=itemsort, box_key=binsort, pair_key=select)
     
-    print mapping
-    print verify_mapping(items=items, boxes=boxes, mapping=mapping)
+    print(mapping)
+    print(verify_mapping(items=items, boxes=boxes, mapping=mapping))
 
 if __name__ == "__main__":
     main() 

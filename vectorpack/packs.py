@@ -20,8 +20,8 @@ def pack_first_fit_by_items(
          represents the corresponding item and contains an index for the bin it
          should be packed in... """
 
-    item_idxs = range(len(items))
-    box_idxs = range(len(boxes))
+    item_idxs = list(range(len(items)))
+    box_idxs = list(range(len(boxes)))
 
     if item_key is not key_null:
         item_idxs.sort(key=lambda i: (item_key(items[i]), i))
@@ -47,8 +47,8 @@ def pack_best_fit_by_items(
     items=None, boxes=None, item_key=key_null, box_key=key_null, 
     pair_key=pairkey_null):
 
-    item_idxs = range(len(items))
-    box_idxs = range(len(boxes))
+    item_idxs = list(range(len(items)))
+    box_idxs = list(range(len(boxes)))
 
     if item_key is not key_null:
         item_idxs.sort(key=lambda i: (item_key(items[i]), i))
@@ -74,8 +74,8 @@ def pack_first_fit_by_boxes(
     items=None, boxes=None, item_key=key_null, box_key=key_null, 
     pair_key=pairkey_null):
 
-    item_idxs = range(len(items))
-    box_idxs = range(len(boxes))
+    item_idxs = list(range(len(items)))
+    box_idxs = list(range(len(boxes)))
 
     if item_key is not key_null:
         item_idxs.sort(key=lambda i: (item_key(items[i]), i))
@@ -110,7 +110,7 @@ def pack_best_fit_by_boxes(
     pair_key=pairkey_null):
 
     item_idxs = set(range(len(items)))
-    box_idxs = range(len(boxes))
+    box_idxs = list(range(len(boxes)))
 
     if box_key is not key_null:
         box_idxs.sort(key=lambda b: (box_key(boxes[b]), b))
@@ -143,7 +143,7 @@ def pack_best_fit(
     pair_key=pairkey_null):
 
     item_idxs = set(range(len(items)))
-    box_idxs = range(len(boxes))
+    box_idxs = list(range(len(boxes)))
 
     capacities = [array(b, copy=True) for b in boxes]
 
