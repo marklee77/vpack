@@ -1,14 +1,17 @@
 from itertools import islice, product
+from functools import partial
 from numpy import array
+
+from .sorts import key_null
+from .selects import pairkey_null, pp_select, cp_select
 
 # FIXME: ? provide way of allowing key selectors to know global state (e.g.,
 # current mapping and all capacities...)
 
-def key_null(v):
-    return 0
-
-def pairkey_null(v1, v2):
-    return 0
+def pack_null(
+    items=None, boxes=None, item_key=key_null, box_key=key_null, 
+    pair_key=pairkey_null):
+    return None
 
 def pack_first_fit_by_items(
     items=None, boxes=None, item_key=key_null, box_key=key_null, 
@@ -165,12 +168,29 @@ def pack_best_fit(
 
     return mapping
 
+def permutation_pack(
+    items=None, boxes=None, item_key=key_null, box_key=key_null, 
+    window_size=None):
+    pair_key = partial(pp_select, window_size=window_size)
+    return pack_best_fit_by_boxes(
+        items=items, boxes=boxes, box_key=box_key, pair_key=pair_key)
+
+def choose_pack(
+    items=None, boxes=None, item_key=key_null, box_key=key_null, 
+    window_size=None):
+    pair_key = partial(cp_select, window_size=window_size)
+    return pack_best_fit_by_boxes(
+        items=items, boxes=boxes, box_key=box_key, pair_key=pair_key)
+
 PACKS_BY_NAME = {
     "first_fit_by_items" : pack_first_fit_by_items,
     "first_fit_by_boxes" : pack_first_fit_by_boxes,
-    "best_fit_by_items" : pack_best_fit_by_items,
-    "best_fit_by_boxes" : pack_best_fit_by_boxes,
-    "best_fit" : pack_best_fit,
+    "best_fit_by_items"  : pack_best_fit_by_items,
+    "best_fit_by_boxes"  : pack_best_fit_by_boxes,
+    "best_fit"           : pack_best_fit,
+    "none"               : pack_null,
+    "permutation_pack"   : permutation_pack,
+    "choose_pack"        : choose_pack,
 }
 
 def get_pack_names():

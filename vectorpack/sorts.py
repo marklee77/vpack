@@ -1,12 +1,15 @@
 from numpy.linalg import norm
 
+def key_null(v):
+    return 0
+
 SORTS_BY_NAME = {
     "asum"       : sum,
     "al2"        : (lambda v: norm(v, ord=2)),
     "amax"       : max,
     "amaxratio"  : (lambda v: float(max(v)) / min(v)),
     "amaxdiff"   : (lambda v: max(v) - min(v)),
-    "none"       : None,
+    "none"       : key_null,
     "dsum"       : (lambda v: -sum(v)),
     "dl2"        : (lambda v: -norm(v, ord=2)),
     "dmax"       : (lambda v: -max(v)),

@@ -2,7 +2,7 @@ import unittest
 
 from numpy import array
 
-from vectorpack import packs
+from .. import packs
 
 # FIXME: move to util.py?
 def verify_map(mapping, items, boxes):
