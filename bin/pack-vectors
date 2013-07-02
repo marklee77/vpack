@@ -18,9 +18,9 @@ def main(argv=None):
     except ImportError:
         from yaml import YDumper
 
-    from vectorpack.packs import get_pack_names, get_pack
-    from vectorpack.sorts import get_sort_names, get_sort
-    from vectorpack.selects import get_select_names, get_select
+    from vectorpack.packs import get_pack_names, get_pack_by_name
+    from vectorpack.sorts import get_sort_names, get_sort_by_name
+    from vectorpack.selects import get_select_names, get_select_by_name
     from vectorpack.util import verify_mapping
 
     packnames = get_pack_names()
@@ -49,10 +49,10 @@ def main(argv=None):
 
     items = array(problem.get('items', None))
     boxes = array(problem.get('boxes', None))
-    pack = get_pack(args.pack)
-    item_key = get_sort(args.itemsort)
-    bin_key = get_sort(args.binsort)
-    select_key = get_select(args.select)
+    pack = get_pack_by_name(args.pack)
+    item_key = get_sort_by_name(args.itemsort)
+    bin_key = get_sort_by_name(args.binsort)
+    select_key = get_select_by_name(args.select)
 
     start_time = time.process_time()
     mapping = pack(items=items, boxes=boxes, item_key=item_key, box_key=bin_key, 

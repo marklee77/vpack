@@ -2,10 +2,11 @@ from functools import partial
 from hashlib import sha1
 from numpy.linalg import norm
 
-def pairkey_null(v1, v2):
+def null_select_key(v1, v2):
     return 0
 
 # FIXME: get_select implement pre-caching and calculation...
+# FIXME: api change...
 
 """
 Some notes:
@@ -72,16 +73,6 @@ def memoize(function):
             return val
     return decorated_function
 
-@memoize
-def dimension_to_rank2(v):
-    """ Provide map that is inverse of above, e.g., can be used to go from a
-        dimension number to a rank for that dimension
-    """
-    d2r = [None] * len(v)
-    for r, d in enumerate(sorted(range(len(v)), key=lambda d: (-v[d], d))):
-        d2r[d] = r
-    return d2r
-
 def rank_to_dimension(v):
     """ compute the ordering on dimensions based on their size.
         e.g., for a 3D array [2, 0, 1] means that the dimension 2 has the
@@ -90,7 +81,7 @@ def rank_to_dimension(v):
         The natural ordering is used to break any ties and thus guarantee a
         stable sort. 
     """
-    return sorted(range(len(v)), key=lambda d: (-v[d], d)) # stable sort
+    return sorted(range(len(v)), key=v.__getitem__, reverse=True)
     
 def dimension_to_rank(v):
     """ Provide map that is inverse of above, e.g., can be used to go from a
@@ -127,16 +118,14 @@ SELECTS_BY_NAME = {
     "amax"       : (lambda i, c: max(c - i)),
     "amaxratio"  : (lambda i, c: float(max(c - i)) / min(c - i)),
     "amaxdiff"   : (lambda i, c: max(c - i) - min(c - i)),
-    "none"       : pairkey_null,
+    "none"       : null_select_key,
     "dsum"       : (lambda i, c: -sum(c - i)),
     "dl2"        : (lambda i, c: -norm(c - i, ord=2)),
     "dmax"       : (lambda i, c: -max(c - i)),
     "dmaxratio"  : (lambda i, c: float(min(c - i)) / max(c - i)),
     "dmaxdiff"   : (lambda i, c: min(c - i) - max(c - i)),
     "pp"         : pp_select,
-    "pp:w1"      : partial(pp_select, window_size=1),
     "cp"         : cp_select,
-    "cp:w1"      : partial(cp_select, window_size=1),
 }
 
 
@@ -144,6 +133,6 @@ def get_select_names():
     return SELECTS_BY_NAME.keys()
 
 
-# FIXME: use "partial" for keyword parameter passing
-def get_select(name):
+def get_select_by_name(name):
     return SELECTS_BY_NAME.get(name, None)
+

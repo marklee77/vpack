@@ -1,6 +1,6 @@
 from numpy.linalg import norm
 
-def key_null(v):
+def null_sort_key(v):
     return 0
 
 SORTS_BY_NAME = {
@@ -9,7 +9,7 @@ SORTS_BY_NAME = {
     "amax"       : max,
     "amaxratio"  : (lambda v: float(max(v)) / min(v)),
     "amaxdiff"   : (lambda v: max(v) - min(v)),
-    "none"       : key_null,
+    "none"       : null_sort_key,
     "dsum"       : (lambda v: -sum(v)),
     "dl2"        : (lambda v: -norm(v, ord=2)),
     "dmax"       : (lambda v: -max(v)),
@@ -20,5 +20,5 @@ SORTS_BY_NAME = {
 def get_sort_names():
     return SORTS_BY_NAME.keys()
 
-def get_sort(name):
+def get_sort_by_name(name):
     return SORTS_BY_NAME.get(name, None)

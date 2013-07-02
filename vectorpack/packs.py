@@ -5,6 +5,9 @@ from numpy import array
 from .sorts import null_sort_key
 from .selects import null_select_key
 
+# FIXME: rename capacities?
+# FIXME: remove lambdas, replace with partials?
+
 def pack_first_fit_by_items(
     items=None, boxes=None, item_key=null_sort_key, box_key=null_sort_key, 
     select_key=null_select_key):
@@ -171,5 +174,5 @@ PACKS_BY_NAME = {
 def get_pack_names():
     return PACKS_BY_NAME.keys()
 
-def get_pack(name):
+def get_pack_by_name(name):
     return PACKS_BY_NAME.get(name, None)
