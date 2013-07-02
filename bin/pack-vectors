@@ -1,15 +1,11 @@
 #!/usr/bin/env python
-import cProfile
-from numpy import array
-from vectorpack.packs import get_pack_names, get_pack
-from vectorpack.sorts import get_sort_names, get_sort
-from vectorpack.selects import get_select_names, get_select
-from vectorpack.util import verify_mapping
-
 def main(argv=None):
     from argparse import ArgumentParser
+    from collections import Counter
+    from numpy import array
     from os.path import isfile
     from sys import stdin, stdout
+    import time
     from yaml import load as yload, dump as ydump
 
     try:
@@ -22,6 +18,10 @@ def main(argv=None):
     except ImportError:
         from yaml import YDumper
 
+    from vectorpack.packs import get_pack_names, get_pack
+    from vectorpack.sorts import get_sort_names, get_sort
+    from vectorpack.selects import get_select_names, get_select
+    from vectorpack.util import verify_mapping
 
     packnames = get_pack_names()
     sortnames = get_sort_names()
@@ -50,22 +50,30 @@ def main(argv=None):
     items = array(problem.get('items', None))
     boxes = array(problem.get('boxes', None))
     pack = get_pack(args.pack)
-    itemsort = get_sort(args.itemsort)
-    binsort = get_sort(args.binsort)
-    select = get_select(args.select)
+    item_key = get_sort(args.itemsort)
+    bin_key = get_sort(args.binsort)
+    select_key = get_select(args.select)
+
+    start_time = time.process_time()
+    mapping = pack(items=items, boxes=boxes, item_key=item_key, box_key=bin_key, 
+                   select_key=select_key)
+    stop_time = time.process_time()
 
     solution = {
+        'problem-argshash' : problem.get('argshash', None),
         'pack' : args.pack,
         'itemsort' : args.itemsort,
         'binsort' : args.binsort,
         'select' : args.select,
-        'mapping' : pack(items=items, boxes=boxes, item_key=itemsort, 
-                         box_key=binsort, pair_key=select)
+        'success' : mapping is not None,
+        'mapping' : mapping,
+        'bincount' : len(Counter(mapping)),
+        'runtime' : stop_time - start_time,
+        'verified' : verify_mapping(items=items, boxes=boxes, mapping=mapping)
     }
 
     print(ydump(solution, Dumper=YDumper))
     
-    #print(verify_mapping(items=items, boxes=boxes, mapping=mapping))
 
 if __name__ == "__main__":
     main() 

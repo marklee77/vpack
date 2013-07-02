@@ -1,9 +1,11 @@
 from functools import partial
 from hashlib import sha1
-from numpy import uint8
+from numpy.linalg import norm
 
 def pairkey_null(v1, v2):
     return 0
+
+# FIXME: get_select implement pre-caching and calculation...
 
 """
 Some notes:
@@ -56,24 +58,30 @@ Some notes:
     with items that are largest in those dimensions
 """
 
-# alternative memoize func...
-def memoizenp(function):
+""" FIXME: this *could* speed things up for item lookups d2r, but it doesn't
+    seem like it... """
+def memoize(function):
     cache = {}
-    def decorated_function(*args):
-        #argshash = tuple(int(sha1(a.view(uint8)).hexdigest(), 16) for a in args)
-        argshash = int(sha1(args[0].view(uint8)).hexdigest(), 16)
+    def decorated_function(v):
+        argshash = sha1(v).digest()
         if argshash in cache:
-            #print('cached')
             return cache[argshash]
         else:
-            #print('not cached')
-            val = function(*args)
+            val = function(v)
             cache[argshash] = val
             return val
     return decorated_function
 
-# FIXME: memcache?
-#@memoizenp
+@memoize
+def dimension_to_rank2(v):
+    """ Provide map that is inverse of above, e.g., can be used to go from a
+        dimension number to a rank for that dimension
+    """
+    d2r = [None] * len(v)
+    for r, d in enumerate(sorted(range(len(v)), key=lambda d: (-v[d], d))):
+        d2r[d] = r
+    return d2r
+
 def rank_to_dimension(v):
     """ compute the ordering on dimensions based on their size.
         e.g., for a 3D array [2, 0, 1] means that the dimension 2 has the
@@ -84,8 +92,6 @@ def rank_to_dimension(v):
     """
     return sorted(range(len(v)), key=lambda d: (-v[d], d)) # stable sort
     
-# FIXME: memcache?
-#@memoizenp
 def dimension_to_rank(v):
     """ Provide map that is inverse of above, e.g., can be used to go from a
         dimension number to a rank for that dimension
@@ -95,7 +101,6 @@ def dimension_to_rank(v):
         d2r[d] = r
     return d2r
 
-# FIXME: memcache?
 def pp_select(item=None, capacity=None, window_size=None):
     if window_size is None:
         window_size = len(capacity)
@@ -105,7 +110,7 @@ def pp_select(item=None, capacity=None, window_size=None):
     d2r_i = dimension_to_rank(item)
     return [d2r_i[d] for d in r2d_c[:window_size]]
 
-# FIXME: memcache?
+
 def cp_select(item=None, capacity=None, window_size=None):
     if window_size is None:
         window_size = len(capacity)
@@ -114,6 +119,7 @@ def cp_select(item=None, capacity=None, window_size=None):
     largest_capacity_dims = set(rank_to_dimension(capacity)[:window_size])
     largest_item_dims = set(rank_to_dimension(item)[:window_size])
     return -len(largest_capacity_dims & largest_item_dims)
+
 
 SELECTS_BY_NAME = {
     "asum"       : (lambda i, c: sum(c - i)),
@@ -125,7 +131,7 @@ SELECTS_BY_NAME = {
     "dsum"       : (lambda i, c: -sum(c - i)),
     "dl2"        : (lambda i, c: -norm(c - i, ord=2)),
     "dmax"       : (lambda i, c: -max(c - i)),
-    "dmaxtratio" : (lambda i, c: float(min(c - i)) / max(c - i)),
+    "dmaxratio"  : (lambda i, c: float(min(c - i)) / max(c - i)),
     "dmaxdiff"   : (lambda i, c: min(c - i) - max(c - i)),
     "pp"         : pp_select,
     "pp:w1"      : partial(pp_select, window_size=1),
@@ -133,8 +139,10 @@ SELECTS_BY_NAME = {
     "cp:w1"      : partial(cp_select, window_size=1),
 }
 
+
 def get_select_names():
     return SELECTS_BY_NAME.keys()
+
 
 # FIXME: use "partial" for keyword parameter passing
 def get_select(name):

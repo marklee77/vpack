@@ -13,7 +13,7 @@ SORTS_BY_NAME = {
     "dsum"       : (lambda v: -sum(v)),
     "dl2"        : (lambda v: -norm(v, ord=2)),
     "dmax"       : (lambda v: -max(v)),
-    "dmaxtratio" : (lambda v: float(min(v)) / max(v)),
+    "dmaxratio"  : (lambda v: float(min(v)) / max(v)),
     "dmaxdiff"   : (lambda v: min(v) - max(v))
 }
 
