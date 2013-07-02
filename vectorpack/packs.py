@@ -2,27 +2,22 @@ from itertools import islice, product
 from functools import partial
 from numpy import array
 
-from .sorts import null_sort_key
+from .sorts import none_sort_key
 from .selects import null_select_key
 
 # FIXME: rename capacities?
 # FIXME: remove lambdas, replace with partials?
+# FIXME: don't forget to update vlist on composite select function...
 
 def pack_first_fit_by_items(
-    items=None, boxes=None, item_key=null_sort_key, box_key=null_sort_key, 
+    items=None, boxes=None, item_key=none_sort_key, box_key=none_sort_key, 
     select_key=null_select_key):
     """ take items, map them to bins, return an array where each position
          represents the corresponding item and contains an index for the bin it
          should be packed in... """
 
-    item_idxs = list(range(len(items)))
-    box_idxs = list(range(len(boxes)))
-
-    if item_key is not null_sort_key:
-        item_idxs.sort(key=lambda i: (item_key(items[i]), i))
-
-    if box_key is not null_sort_key:
-        box_idxs.sort(key=lambda b: (box_key(boxes[b]), b))
+    item_idxs = sorted(list(range(len(items))), key=item_key)
+    box_idxs = sorted(list(range(len(boxes))), key=box_key)
 
     capacities = [array(b, copy=True) for b in boxes]
 
@@ -39,16 +34,14 @@ def pack_first_fit_by_items(
     return mapping
 
 def pack_best_fit_by_items(
-    items=None, boxes=None, item_key=null_sort_key, box_key=null_sort_key, 
+    items=None, boxes=None, item_key=none_sort_key, box_key=none_sort_key, 
     select_key=null_select_key):
 
-    item_idxs = list(range(len(items)))
-    box_idxs = list(range(len(boxes)))
-
-    if item_key is not null_sort_key:
-        item_idxs.sort(key=lambda i: (item_key(items[i]), i))
+    item_idxs = sorted(list(range(len(items))), key=item_key)
+    box_idxs = sorted(list(range(len(boxes))), key=box_key)
 
     capacities = [array(b, copy=True) for b in boxes]
+    box_key.keywords['vlist'] = capacities
 
     mapping = [None] * len(items)
 
@@ -56,7 +49,7 @@ def pack_best_fit_by_items(
         try:
             b = min((b for b in box_idxs if (items[i] <= capacities[b]).all()), 
                     key=lambda b: (select_key(items[i], capacities[b]), 
-                                   box_key(capacities[b]), 
+                                   box_key(b), 
                                    b))
             mapping[i] = b
             capacities[b] -= items[i]
@@ -66,17 +59,11 @@ def pack_best_fit_by_items(
     return mapping
 
 def pack_first_fit_by_boxes(
-    items=None, boxes=None, item_key=null_sort_key, box_key=null_sort_key, 
+    items=None, boxes=None, item_key=none_sort_key, box_key=none_sort_key, 
     select_key=null_select_key):
 
-    item_idxs = list(range(len(items)))
-    box_idxs = list(range(len(boxes)))
-
-    if item_key is not null_sort_key:
-        item_idxs.sort(key=lambda i: (item_key(items[i]), i))
-
-    if box_key is not null_sort_key:
-        box_idxs.sort(key=lambda b: (box_key(boxes[b]), b))
+    item_idxs = sorted(list(range(len(items))), key=item_key)
+    box_idxs = sorted(list(range(len(boxes))), key=box_key)
 
     capacities = [array(b, copy=True) for b in boxes]
 
@@ -101,14 +88,11 @@ def pack_first_fit_by_boxes(
     return mapping
 
 def pack_best_fit_by_boxes(
-    items=None, boxes=None, item_key=null_sort_key, box_key=null_sort_key,
+    items=None, boxes=None, item_key=none_sort_key, box_key=none_sort_key,
     select_key=null_select_key):
 
-    item_idxs = set(range(len(items)))
-    box_idxs = list(range(len(boxes)))
-
-    if box_key is not null_sort_key:
-        box_idxs.sort(key=lambda b: (box_key(boxes[b]), b))
+    item_idxs = set(range(len(items))) 
+    box_idxs = sorted(list(range(len(boxes))), key=box_key)
 
     capacities = [array(b, copy=True) for b in boxes]
 
@@ -120,8 +104,7 @@ def pack_best_fit_by_boxes(
                 i = min((i for i in item_idxs 
                          if (items[i] <= capacities[b]).all()),
                         key=lambda i: (select_key(items[i], capacities[b]),
-                                       item_key(items[i]), 
-                                       i))
+                                       item_key(i)))
                 mapping[i] = b
                 capacities[b] -= items[i]
                 item_idxs.remove(i) # fast because this is a set!
@@ -134,11 +117,11 @@ def pack_best_fit_by_boxes(
     return mapping
 
 def pack_best_fit(
-    items=None, boxes=None, item_key=null_sort_key, box_key=null_sort_key, 
+    items=None, boxes=None, item_key=none_sort_key, box_key=none_sort_key, 
     select_key=null_select_key):
 
     item_idxs = set(range(len(items)))
-    box_idxs = list(range(len(boxes)))
+    box_idxs = sorted(list(range(len(boxes))), key=box_key)
 
     capacities = [array(b, copy=True) for b in boxes]
 
@@ -149,9 +132,8 @@ def pack_best_fit(
             b, i = min(((b, i) for b, i in product(box_idxs, item_idxs) 
                         if (items[i] <= capacities[b]).all()),
                        key=lambda x: (select_key(items[x[1]], capacities[x[0]]),
-                                      item_key(items[x[1]]),
-                                      box_key(items[x[0]]),
-                                      x))
+                                     item_key(x[1]),
+                                     box_key(x[0])))
             mapping[i] = b
             capacities[b] -= items[i]
             item_idxs.remove(i) # fast because this is a set!
