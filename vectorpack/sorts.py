@@ -1,41 +1,40 @@
-from functools import partial
-from numpy.linalg import norm
-from yaml import load as yload
+from numpy.linalg import norm as lnorm
 
-def none_sort_key(i, vlist=None):
-    return 0
+from .util import zero, negate_func
 
-def sum_sort_key(i, vlist=None):
-    return sum(vlist[i])
+def maxratio(v):
+    maxval = max(v)
+    minval = min(v)
+    if minval == 0.0:
+        return float('inf')
+    return float(maxval) / minval
 
-def lnorm_sort_key(i, vlist=None, ord=2):
-    return norm(vlist[i], ord=ord)
-
-def max_sort_key(i, vlist=None):
-    return max(vlist[i])
-
-def maxratio_sort_key(i, vlist=None):
-    return float(max(vlist[i]) / min(vlist[i]))
-
-def maxdiff_sort_key(i, vlist=None):
-    return max(vlist[i]) - min(vlist[i])
+def maxdiff(v):
+    return max(v) - min(v)
 
 SORT_KEYS_BY_NAME = {
-    "none"      : none_sort_key,
-    "sum"       : sum_sort_key,
-    "lnorm"     : lnorm_sort_key,
-    "max"       : max_sort_key,
-    "maxratio"  : maxratio_sort_key,
-    "maxdiff"   : maxdiff_sort_key
+    "none"      : zero,
+    "sum"       : sum,
+    "lnorm"     : lnorm,
+    "max"       : max,
+    "maxratio"  : maxratio,
+    "maxdiff"   : maxdiff
 }
 
 def list_sort_keys():
     return sorted(SORT_KEYS_BY_NAME.keys())
 
-def negate_func(f, *args, **kwargs):
-    return -f(*args, **kwargs)
+# FIXME: move to packs?
+def wrap_sort_key_func(f):
+    def sort_key_func(vlist, idx):
+        return f(vlist[idx])
+    return sort_key_func
 
+# FIXME: move to script?
+# FIXME: vlist...
 def get_sort_key(name, vlist=None):
+    from functools import partial
+    from yaml import load as yload
     args = name.split(":")
     desc = False
     arg = args.pop(0)
@@ -43,10 +42,11 @@ def get_sort_key(name, vlist=None):
         if arg is "d":
             desc = True
         arg = args.pop(0)
-    sort_key_func = SORT_KEYS_BY_NAME[arg] # FIXME: exception handler
+    # FIXME: exception handler
+    f = wrap_sort_key_func(SORT_KEYS_BY_NAME[arg])
     kwargs = { 'vlist': vlist }
     if args:
         kwargs.update(yload("\n".join(arg.replace('=', ': ') for arg in args)))
     if desc:
-        return partial(negate_func, sort_key_func, **kwargs)
-    return partial(sort_key_func, **kwargs)
+        return partial(negate_func, f, **kwargs)
+    return partial(f, **kwargs)

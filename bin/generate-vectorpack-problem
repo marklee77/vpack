@@ -43,7 +43,7 @@ def main(argv=None):
     boxdim_totals = [sum(box[i] for box in boxes) 
                      for i in range(args.num_dimensions)]
 
-    boxes = [[int(val * (50.0 * args.num_boxes / total)) for val, total in
+    boxes = [[max(1, int(val * (50.0 * args.num_boxes / total))) for val, total in
              zip(box, boxdim_totals)] for box in boxes]
 
     boxdim_totals = [sum(box[i] for box in boxes) 

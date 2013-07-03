@@ -13,6 +13,13 @@ def verify_mapping(items=None, boxes=None, mapping=None):
         return True
     return False
 
+
+def zero(*args, **kwargs):
+    return 0
+
+def negate_func(f, *args, **kwargs):
+    return -f(*args, **kwargs)
+
 """ from 
 http://machineawakening.blogspot.co.uk/2011/03/making-numpy-ndarrays-hashable.html """
 
