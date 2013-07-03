@@ -1,3 +1,5 @@
+from functools import wraps
+
 from numpy.linalg import norm as lnorm
 
 from .util import zero, negate_func
@@ -24,10 +26,17 @@ SORT_KEYS_BY_NAME = {
 def list_sort_keys():
     return sorted(SORT_KEYS_BY_NAME.keys())
 
-# FIXME: move to packs?
-def wrap_sort_key_func(f):
-    def sort_key_func(vlist, idx):
-        return f(vlist[idx])
+# FIXME: there has to be a cleaner way...
+
+def wrap_sort_key_func(f, reverse=False):
+    if reverse:
+        @wraps(f)
+        def sort_key_func(vlist, idx):
+            return -f(vlist[idx])
+    else
+        @wraps(f)
+        def sort_key_func(vlist, idx):
+            return f(vlist[idx])
     return sort_key_func
 
 # FIXME: move to script?
