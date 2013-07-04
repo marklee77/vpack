@@ -44,8 +44,9 @@ def _pack_by_product(
 
     while True:
         try:
-            pi, i, b = min(((pi, i, b) for pi, i, b in ((x[0], x[1], y) for x, y 
-                            in product(enumerate(item_idxs), bin_idxs))
+            pi, i, b = min(((pi, i, b) for pi, i, b in 
+                            ((x[0], x[1], y) for x, y in 
+                                product(enumerate(item_idxs), bin_idxs))
                             if (items[i] <= bins[b]).all()), 
                            key=lambda x: select_key(x[1], x[2]))
             mapping[i] = b

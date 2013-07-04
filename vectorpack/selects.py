@@ -51,10 +51,10 @@ def cp_select(item, bin_, window_size=None):
     largest_bin_dims = set(rank_to_dimension(bin_)[:window_size])
     return -len(largest_item_dims & largest_bin_dims)
 
-def make_select(f, *args, **kwargs):
+def make_select(f):
 
     @wraps(f)
-    def f_select(item, bin_):
+    def f_select(item, bin_, *args, **kwargs):
         return f(bin_ - item, *args, **kwargs)
 
     return f_select
@@ -77,4 +77,3 @@ def list_selects():
 
 def get_select_by_name(name):
     return SELECTS_BY_NAME[name]
-
