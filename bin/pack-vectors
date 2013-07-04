@@ -1,58 +1,87 @@
 #!/usr/bin/env python3
 
-# FIXME: move to script?
-# FIXME: vlist...
-def get_sort_key(name, vlist=None):
-    from functools import partial
-    from yaml import load as yload
-    args = name.split(":")
-    desc = False
+from argparse import ArgumentParser
+from collections import Counter
+from functools import partial
+from os.path import isfile
+from sys import stdin, stdout
+import time
+
+from numpy import array
+from yaml import load as yload, dump as ydump
+
+try:
+    from yaml import CLoader as YLoader
+except ImportError:
+    from yaml import Loader as YLoader
+
+try:
+    from yaml import CDumper as YDumper
+except ImportError:
+    from yaml import YDumper
+
+from vectorpack.packs import get_pack_by_name
+from vectorpack.sorts import get_sort_key_by_name
+from vectorpack.selects import get_select_by_name
+from vectorpack.util import verify_mapping, negate_func, zero
+
+
+def parse_sort_cmdline(sortcmd):
+    args = sortcmd.split(":")
+
     arg = args.pop(0)
+    desc = False
     if arg in [ "a", "d" ]:
         if arg is "d":
             desc = True
         arg = args.pop(0)
-    # FIXME: exception handler
-    f = wrap_sort_key_func(SORT_KEYS_BY_NAME[arg])
-    kwargs = { 'vlist': vlist }
+
+    sort_key = get_sort_key_by_name(arg)
+
+    kwargs = {}
     if args:
         kwargs.update(yload("\n".join(arg.replace('=', ': ') for arg in args)))
+
     if desc:
-        return partial(negate_func, f, **kwargs)
-    return partial(f, **kwargs)
+        return partial(negate_func, sort_key, **kwargs)
+
+    if kwargs:
+        return partial(sort_key, **kwargs)
+
+    return sort_key
+
+
+def parse_select_cmdline(sortcmd):
+    args = sortcmd.split(":")
+
+    arg = args.pop(0)
+    desc = False
+    if arg in [ "a", "d" ]:
+        if arg is "d":
+            desc = True
+        arg = args.pop(0)
+
+    select_key = get_select_by_name(arg)
+
+    kwargs = {}
+    if args:
+        kwargs.update(yload("\n".join(arg.replace('=', ': ') for arg in args)))
+
+    if desc:
+        return partial(negate_func, select_key, **kwargs)
+
+    if kwargs:
+        return partial(select_key, **kwargs)
+
+    return select_key
+
 
 def main(argv=None):
-    from argparse import ArgumentParser
-    from collections import Counter
-    from numpy import array
-    from os.path import isfile
-    from sys import stdin, stdout
-    import time
-    from yaml import load as yload, dump as ydump
-
-    try:
-        from yaml import CLoader as YLoader
-    except ImportError:
-        from yaml import Loader as YLoader
-
-    try:
-        from yaml import CDumper as YDumper
-    except ImportError:
-        from yaml import YDumper
-
-    from vectorpack.packs import get_pack_names, get_pack_by_name
-    from vectorpack.sorts import list_sort_keys, get_sort_key
-    from vectorpack.selects import get_select_names, get_select_by_name
-    from vectorpack.util import verify_mapping
-
-    packnames = get_pack_names()
-    sortnames = list_sort_keys()
-    selectnames = get_select_names()
 
     parser = ArgumentParser(description="Solve a vector packing problem.")
     parser.add_argument('-i', '--inputfile', help='input file')
     parser.add_argument('-o', '--outputfile', default='-', help='output file')
-    parser.add_argument('-P', '--pack', default='best_fit', 
+    parser.add_argument('-P', '--pack', default='pack_by_bins', 
                         help='packing algorithm')
     parser.add_argument('-I', '--itemsort', default='none', 
                         help='item sorting algorithm')
@@ -70,14 +99,14 @@ def main(argv=None):
         raise SystemExit("error: can't find file %s" % args.inputfile)
 
     items = array(problem.get('items', None))
-    boxes = array(problem.get('boxes', None))
+    bins = array(problem.get('bins', None))
     pack = get_pack_by_name(args.pack)
-    item_key = get_sort_key(args.itemsort, vlist=items)
-    bin_key = get_sort_key(args.binsort, vlist=boxes)
-    select_key = get_select_by_name(args.select)
+    item_key = parse_sort_cmdline(args.itemsort)
+    bin_key = parse_sort_cmdline(args.binsort)
+    select_key = parse_select_cmdline(args.select)
 
     start_time = time.process_time()
-    mapping = pack(items=items, boxes=boxes, item_key=item_key, box_key=bin_key, 
+    mapping = pack(items=items, bins=bins, item_key=item_key, bin_key=bin_key, 
                    select_key=select_key)
     stop_time = time.process_time()
 
@@ -91,7 +120,7 @@ def main(argv=None):
         'mapping' : mapping,
         'bincount' : len(Counter(mapping)),
         'runtime' : stop_time - start_time,
-        'verified' : verify_mapping(items=items, boxes=boxes, mapping=mapping)
+        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping)
     }
 
     print(ydump(solution, Dumper=YDumper))

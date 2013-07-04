@@ -24,3 +24,5 @@ SORT_KEYS_BY_NAME = {
 def list_sort_keys():
     return sorted(SORT_KEYS_BY_NAME.keys())
 
+def get_sort_key_by_name(name):
+    return SORT_KEYS_BY_NAME[name]

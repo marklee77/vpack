@@ -1,77 +1,15 @@
-from functools import partial
-from hashlib import sha1
-from numpy.linalg import norm
+from functools import wraps
 
-def null_select_key(v1, v2):
-    return 0
+from numpy.linalg import norm as lnorm
 
-# FIXME: get_select implement pre-caching and calculation...
-# FIXME: api change...
-
-"""
-Some notes:
-
-    suppose bin as 
-
-    r2d_c 1 3 0 2 then d2r_c 2 0 3 1
-
-    item preference
-
-    May need to discuss...
-
-    r2d_i    d2r_c[r2d_i]  d2r_i    d2r_i[r2d_c]
-    -------  ------------  -------  ------------
-    1 3 0 2  0 1 2 3       2 0 3 1  0 1 2 3
-    1 3 2 0  0 1 3 2       3 0 2 1  0 1 3 2
-    1 0 3 2  0 2 1 3       1 0 3 2  0 2 1 3
-    1 2 3 0  0 3 1 2       3 0 1 2  0 2 3 1
-    1 0 2 3  0 2 3 1       1 0 2 3  0 3 1 2
-    1 2 0 3  0 3 2 1       2 0 1 3  0 3 2 1
-    3 1 0 2  1 0 2 3       2 1 3 0  1 0 2 3
-    3 1 2 0  1 0 3 2       3 1 2 0  1 0 3 2
-    0 1 3 2  2 0 1 3       0 1 3 2  1 2 0 3
-    2 1 3 0  3 0 1 2       3 1 0 2  1 2 3 0
-    0 1 2 3  2 0 3 1       0 1 2 3  1 3 0 2
-    2 1 0 3  3 0 2 1       2 1 0 3  1 3 2 0
-    3 0 1 2  1 2 0 3       1 2 3 0  2 0 1 3
-    3 2 1 0  1 3 0 2       3 2 1 0  2 0 3 1
-    0 3 1 2  2 1 0 3       0 2 3 1  2 1 0 3
-    2 3 1 0  3 1 0 2       3 2 0 1  2 1 3 0
-    0 2 1 3  2 3 0 1       0 2 1 3  2 3 0 1
-    2 0 1 3  3 2 0 1       1 2 0 3  2 3 1 0
-    3 0 2 1  1 2 3 0       1 3 2 0  3 0 1 2
-    3 2 0 1  1 3 2 0       2 3 1 0  3 0 2 1
-    0 3 2 1  2 1 3 0       0 3 2 1  3 1 0 2
-    2 3 0 1  3 1 2 0       2 3 0 1  3 1 2 0
-    0 2 3 1  2 3 1 0       0 3 1 2  3 2 0 1
-    2 0 3 1  3 2 1 0       1 3 0 2  3 2 1 0
-    
-    d2r_i[r2d_c] seems better, as it preserves largest positioning first,
-    then within each block of 6 preserves 2nd largest next...
-
-"""
-
-
+from .sorts import maxratio, maxdiff
+from .util import zero
 
 """
     The basic approach from Leinberger 1999 is to find the most empty bin
     dimensions, those with the largest capacities available, and pack the bin
     with items that are largest in those dimensions
 """
-
-""" FIXME: this *could* speed things up for item lookups d2r, but it doesn't
-    seem like it... """
-def memoize(function):
-    cache = {}
-    def decorated_function(v):
-        argshash = sha1(v).digest()
-        if argshash in cache:
-            return cache[argshash]
-        else:
-            val = function(v)
-            cache[argshash] = val
-            return val
-    return decorated_function
 
 def rank_to_dimension(v):
     """ compute the ordering on dimensions based on their size.
@@ -83,6 +21,7 @@ def rank_to_dimension(v):
     """
     return sorted(range(len(v)), key=v.__getitem__, reverse=True)
     
+
 def dimension_to_rank(v):
     """ Provide map that is inverse of above, e.g., can be used to go from a
         dimension number to a rank for that dimension
@@ -92,47 +31,50 @@ def dimension_to_rank(v):
         d2r[d] = r
     return d2r
 
-def pp_select(item=None, capacity=None, window_size=None):
+
+def pp_select(item, bin_, window_size=None):
     if window_size is None:
-        window_size = len(capacity)
+        window_size = len(bin_)
     elif window_size == 0:
         return None
-    r2d_c = rank_to_dimension(capacity)
     d2r_i = dimension_to_rank(item)
-    return [d2r_i[d] for d in r2d_c[:window_size]]
+    r2d_b = rank_to_dimension(bin_)
+    return [d2r_i[d] for d in r2d_b[:window_size]]
 
 
-def cp_select(item=None, capacity=None, window_size=None):
+def cp_select(item, bin_, window_size=None):
     if window_size is None:
-        window_size = len(capacity)
+        window_size = len(bin_)
     elif window_size == 0:
         return None
-    largest_capacity_dims = set(rank_to_dimension(capacity)[:window_size])
     largest_item_dims = set(rank_to_dimension(item)[:window_size])
-    return -len(largest_capacity_dims & largest_item_dims)
+    largest_bin_dims = set(rank_to_dimension(bin_)[:window_size])
+    return -len(largest_item_dims & largest_bin_dims)
 
+def make_select(f, *args, **kwargs):
+
+    @wraps(f)
+    def f_select(item, bin_):
+        return f(bin_ - item, *args, **kwargs)
+
+    return f_select
 
 SELECTS_BY_NAME = {
-    "asum"       : (lambda i, c: sum(c - i)),
-    "al2"        : (lambda i, c: norm(c - i, ord=2)),
-    "amax"       : (lambda i, c: max(c - i)),
-    "amaxratio"  : (lambda i, c: float(max(c - i)) / min(c - i)),
-    "amaxdiff"   : (lambda i, c: max(c - i) - min(c - i)),
-    "none"       : null_select_key,
-    "dsum"       : (lambda i, c: -sum(c - i)),
-    "dl2"        : (lambda i, c: -norm(c - i, ord=2)),
-    "dmax"       : (lambda i, c: -max(c - i)),
-    "dmaxratio"  : (lambda i, c: float(min(c - i)) / max(c - i)),
-    "dmaxdiff"   : (lambda i, c: min(c - i) - max(c - i)),
+    "none"       : zero,
+    "sum"        : make_select(sum),
+    "lnorm"      : make_select(lnorm),
+    "max"        : make_select(max),
+    "maxratio"   : make_select(maxratio),
+    "maxdiff"    : make_select(maxdiff),
     "pp"         : pp_select,
     "cp"         : cp_select,
 }
 
 
-def get_select_names():
+def list_selects():
     return SELECTS_BY_NAME.keys()
 
 
 def get_select_by_name(name):
-    return SELECTS_BY_NAME.get(name, None)
+    return SELECTS_BY_NAME[name]
 

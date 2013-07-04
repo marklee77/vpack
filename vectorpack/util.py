@@ -1,15 +1,15 @@
 from hashlib import sha1
 from numpy import all, array, uint8
 
-def verify_mapping(items=None, boxes=None, mapping=None):
-    if boxes is None or mapping is None:
+def verify_mapping(items=None, bins=None, mapping=None):
+    if bins is None or mapping is None:
         return False
     if items is None:
         return True
-    allocs = [array([0] * len(box)) for box in boxes]
-    for item, boxidx in zip(items, mapping):
-        allocs[boxidx] += item
-    if min((alloc <= capacity).all() for alloc, capacity in zip(allocs, boxes)):
+    allocs = [array([0] * len(bin_)) for bin_ in bins]
+    for item, binidx in zip(items, mapping):
+        allocs[binidx] += item
+    if min((alloc <= bin_).all() for alloc, bin_ in zip(allocs, bins)):
         return True
     return False
 

@@ -16,9 +16,9 @@ def main(argv=None):
     parser = ArgumentParser(description="Generate a random problem instance.")
     parser.add_argument('-s', '--seed', type=int, help='seed for random number generator')
     parser.add_argument('-d', '--num_dimensions', type=int, help='number of dimensions')
-    parser.add_argument('-b', '--num_boxes', type=int, help='number of boxes')
+    parser.add_argument('-b', '--num_bins', type=int, help='number of bins')
     parser.add_argument('-i', '--num_items', type=int, help='number of items')
-    parser.add_argument('-c', '--cov', type=float, help='box dimension cov')
+    parser.add_argument('-c', '--cov', type=float, help='bin dimension cov')
     parser.add_argument('-k', '--slack', type=float, help='slack')
     parser.add_argument('-n', '--note', help='note')
 
@@ -26,27 +26,27 @@ def main(argv=None):
 
     random.seed(args.seed) 
 
-    boxes = [[max(1, min(int(random.normalvariate(50, 50 * args.cov)), 100))
+    bins = [[max(1, min(int(random.normalvariate(50, 50 * args.cov)), 100))
               for i in range(args.num_dimensions)]
-              for j in range(args.num_boxes)]
+              for j in range(args.num_bins)]
 
     # FIXME: might revisit this, but rescale in every dimension so largest is
     # 100...want to avoid having one dimension totally dominate another...
     
     
-    #boxdim_ratios = [100.0 / max(box[i] for box in boxes) 
+    #bindim_ratios = [100.0 / max(bin_[i] for bin_ in bins) 
     #                for i in range(args.num_dimensions)]
 
-    #boxes = [[int(val * ratio) for val, ratio in zip(box, boxdim_ratios)] 
-    #         for box in boxes]
+    #bins = [[int(val * ratio) for val, ratio in zip(bin, bindim_ratios)] 
+    #         for bin_ in bins]
 
-    boxdim_totals = [sum(box[i] for box in boxes) 
+    bindim_totals = [sum(bin_[i] for bin_ in bins) 
                      for i in range(args.num_dimensions)]
 
-    boxes = [[max(1, int(val * (50.0 * args.num_boxes / total))) for val, total in
-             zip(box, boxdim_totals)] for box in boxes]
+    bins = [[max(1, int(val * (50.0 * args.num_bins / total))) for val, total in
+             zip(bin_, bindim_totals)] for bin_ in bins]
 
-    boxdim_totals = [sum(box[i] for box in boxes) 
+    bindim_totals = [sum(bin_[i] for bin_ in bins) 
                      for i in range(args.num_dimensions)]
 
     items = [[random.randint(1, 100) for i in range(args.num_dimensions)] 
@@ -58,11 +58,11 @@ def main(argv=None):
     for item in items:
         for i in range(args.num_dimensions):
             item[i] = max(1, int(item[i] * (1.0 - args.slack) * 
-                                    boxdim_totals[i] / itemdim_totals[i]))
+                                    bindim_totals[i] / itemdim_totals[i]))
 
     print('argshash: ' + sha1(str(vars(args)).encode('utf-8')).hexdigest())
     print(dump({'args' : vars(args)}, Dumper=Dumper), end='')
-    print(dump({'boxes' : boxes }, Dumper=Dumper), end='')
+    print(dump({'bins' : bins }, Dumper=Dumper), end='')
     print(dump({'items' : items }, Dumper=Dumper), end='')
 
 if __name__ == "__main__":
