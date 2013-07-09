@@ -1,8 +1,10 @@
-from itertools import islice, product
+from itertools import product
 from functools import wraps
 from numpy import array
 
 from .util import zero
+
+# FIXME: potential to speed up by bins / product using prefiltering...profile!
 
 def _pack_by_items(
     items, item_idxs, bins, bin_idxs, select_key, mapping):
@@ -17,6 +19,7 @@ def _pack_by_items(
             return None
 
     return mapping
+
 
 def _pack_by_bins(
     items, item_idxs, bins, bin_idxs, select_key, mapping):
@@ -39,6 +42,8 @@ def _pack_by_bins(
     return mapping
 
 
+# FIXME: this could be smarter...for each item build a list of fitting bins...
+# but needs an update every time...
 def _pack_by_product(
     items, item_idxs, bins, bin_idxs, select_key, mapping):
 
