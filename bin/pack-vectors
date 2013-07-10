@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from collections import Counter
 from functools import partial
 from os.path import isfile
+from random import sample
 from sys import stdin, stdout
 import time
 
@@ -89,6 +90,8 @@ def main(argv=None):
                         help='bin sorting algorithm')
     parser.add_argument('-S', '--select', default='none', 
                         help='pairwise selection algorithm')
+    parser.add_argument('-s', '--split', default=1, type=int,
+                        help='split the problem')
 
     args = parser.parse_args()
 
@@ -98,17 +101,50 @@ def main(argv=None):
     else:
         raise SystemExit("error: can't find file %s" % args.inputfile)
 
-    items = array(problem.get('items', None))
-    bins = array(problem.get('bins', None))
+    items = problem.get('items', None)
+    bins = problem.get('bins', None)
     pack = get_pack_by_name(args.pack)
     item_key = parse_sort_cmdline(args.itemsort)
     bin_key = parse_sort_cmdline(args.binsort)
     select_key = parse_select_cmdline(args.select)
 
-    start_time = time.process_time()
-    mapping = pack(items=items, bins=bins, item_key=item_key, bin_key=bin_key, 
-                   select_key=select_key)
-    stop_time = time.process_time()
+    mapping = []
+
+    # FIXME: read as tuples and use sets?
+    if args.split > 1:
+        start_time = time.process_time()
+        enum_items = set(enumerate(tuple(item) for item in items))
+        enum_bins = set(enumerate(tuple(bin_) for bin_ in bins))
+        enum_items_sublist_size = int((float(len(items)) / args.split) + 0.5)
+        enum_bins_sublist_size = int((float(len(bins)) / args.split) + 0.5)
+        mapping = [None] * len(items)
+        for i in range(args.split):
+            enum_items_sublist = list(enum_items)
+            if enum_items_sublist_size < len(enum_items_sublist):
+                enum_items_sublist = sample(enum_items, enum_items_sublist_size)
+            enum_items -= set(enum_items_sublist)
+            enum_bins_sublist = list(enum_bins)
+            if enum_bins_sublist_size < len(enum_bins_sublist):
+                enum_bins_sublist = sample(enum_bins, enum_bins_sublist_size)
+            enum_bins -= set(enum_bins_sublist)
+            items_tmp = [i for pi, i in enum_items_sublist]
+            bins_tmp = [b for pb, b in enum_bins_sublist]
+            mapping_tmp = pack(items=items_tmp, bins=bins_tmp, 
+                           item_key=item_key, bin_key=bin_key, 
+                           select_key=select_key)
+            if mapping_tmp is None:
+                mapping = None
+                break
+            for i, b in enumerate(mapping_tmp):
+                mapping[enum_items_sublist[i][0]] = enum_bins_sublist[b][0]
+        stop_time = time.process_time()
+                
+    else:
+        start_time = time.process_time()
+        mapping = pack(items=items, bins=bins, 
+                       item_key=item_key, bin_key=bin_key, 
+                       select_key=select_key)
+        stop_time = time.process_time()
 
     solution = {
         'problem-argshash' : problem.get('argshash', None),
