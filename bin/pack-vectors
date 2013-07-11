@@ -112,6 +112,8 @@ def main(argv=None):
     mapping = []
 
     if args.split > 0:
+        # FIXME? alternate implementation would be to generate set of indexes,
+        # build map from that, might be more elegant.
         start_time = time.process_time()
         enum_items = set(enumerate(tuple(item) for item in items))
         enum_bins = set(enumerate(tuple(bin_) for bin_ in bins))

@@ -1,0 +1,90 @@
+#!/usr/bin/python
+
+def main(argv=None):
+    from argparse import ArgumentParser
+    from gzip import GzipFile
+    import os
+    import random
+    import sys
+
+    from pandas import read_csv
+
+    parser = ArgumentParser(
+        description="Generat a random problem instance using google data.")
+    parser.add_argument('-s', '--seed', type=int, 
+                        help='seed for random number generator')
+    parser.add_argument('-g', '--googledir', 
+                        help='path to google-clusterdata-2011-1 directory')
+    parser.add_argument('-i', '--indexfile', 
+                        help='path to google task_usage-startend-index file')
+
+    args = parser.parse_args()
+
+    random.seed(args.seed) 
+
+    # get task population data from google dataset
+    file_index = read_csv(args.indexfile, header=None, index_col=False,
+                          names=['filename', 'min_timestamp', 'max_timestamp'])
+    min_timestamp = min(file_index['min_timestamp'])
+    max_timestamp = max(file_index['max_timestamp'])
+    moment = random.randint(min_timestamp, max_timestamp)
+    task_population = dict()
+    print len(file_index)
+    df = file_index[file_index['min_timestamp'] <= moment <= file_index['max_timestamp']]
+    print len(df)
+    sys.exit(0)
+
+    for row in file_index.iterrows():
+        print row
+
+        sys.exit(0)
+        if row[1] <= moment <= row[2]:
+            usage_file = GzipFile(os.path.join(args.googledir, 'task_usage', row[0]))
+            for line in usage_file:
+                fields = line.split(',')
+                start_time = int(fields[0])
+                end_time = int(fields[1])
+                if start_time <= moment <= end_time:
+                    job_id = int(fields[2])
+                    task_idx = int(fields[3])
+                    cpu = float(fields[5])
+                    mem = float(fields[6])
+                    if cpu > 0.0 or mem > 0.0:
+                        task_population[(job_id, task_idx)] = (cpu, mem)
+
+    # get machine data from google
+    machine_event_data = csvreader(GzipFile(os.path.join(args.googledir,
+                                   'machine_events/part-00000-of-00001.csv.gz')))
+    machine_population = dict()
+    for timestamp_str, machine_id, event_type_str, platform_id, cpu_str, mem_str in machine_event_data:
+        timestamp = int(timestamp_str)
+        event_type = int(event_type_str)
+        if timestamp <= moment:
+            if event_type in [0, 2]:
+                try:
+                    cpu = float(cpu_str)
+                    mem = float(mem_str)
+                    machine_population[machine_id] = (cpu, mem)
+                except ValueError:
+                    pass
+            elif event_type == 1:
+                del machine_population[machine_id]
+            
+    print len(machine_population), len(task_population)
+    print "cpu:", sum(cpu for cpu, mem in task_population.values()), "/", sum(cpu for cpu, mem in machine_population.values()), \
+          sum(cpu for cpu, mem in task_population.values()) / sum(cpu for cpu, mem in machine_population.values())
+
+    print "mem:", sum(mem for cpu, mem in task_population.values()), "/", sum(mem for cpu, mem in machine_population.values()), \
+          sum(mem for cpu, mem in task_population.values()) / sum(mem for cpu, mem in machine_population.values())
+
+    task_sample = random.sample(task_population.values(), 4096)
+    machine_sample = random.sample(machine_population.values(), 512) 
+    print len(machine_sample), len(task_sample)
+    print "cpu:", sum(cpu for cpu, mem in task_sample), "/", sum(cpu for cpu, mem in machine_sample), \
+          sum(cpu for cpu, mem in task_sample) / sum(cpu for cpu, mem in machine_sample)
+    print "mem:", sum(mem for cpu, mem in task_sample), "/", sum(mem for cpu, mem in machine_sample), \
+          sum(mem for cpu, mem in task_sample) / sum(mem for cpu, mem in machine_sample)
+    
+
+if __name__ == "__main__":
+    main()

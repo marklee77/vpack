@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 # FIXME: theoretically, slack and load should be vectors?
-# FIXME: theoretically, this might not be a great way to generate problem
-# instances...
 
 def main(argv=None):
     from argparse import ArgumentParser
@@ -29,22 +27,6 @@ def main(argv=None):
     bins = [[max(1, min(int(random.normalvariate(50, 50 * args.cov)), 100))
               for i in range(args.num_dimensions)]
               for j in range(args.num_bins)]
-
-    # FIXME: might revisit this, but rescale in every dimension so largest is
-    # 100...want to avoid having one dimension totally dominate another...
-    
-    
-    #bindim_ratios = [100.0 / max(bin_[i] for bin_ in bins) 
-    #                for i in range(args.num_dimensions)]
-
-    #bins = [[int(val * ratio) for val, ratio in zip(bin, bindim_ratios)] 
-    #         for bin_ in bins]
-
-    bindim_totals = [sum(bin_[i] for bin_ in bins) 
-                     for i in range(args.num_dimensions)]
-
-    bins = [[max(1, int(val * (50.0 * args.num_bins / total))) for val, total in
-             zip(bin_, bindim_totals)] for bin_ in bins]
 
     bindim_totals = [sum(bin_[i] for bin_ in bins) 
                      for i in range(args.num_dimensions)]

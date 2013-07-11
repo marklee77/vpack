@@ -1,6 +1,6 @@
 from distutils.core import setup, Command
 from distutils.extension import Extension
-#from Cython.Distutils import build_ext
+from Cython.Distutils import build_ext
 
 class PyTest(Command):
     user_options = []
@@ -19,7 +19,7 @@ setup(
     author='Mark Stillwell',
     author_email='marklee@fortawesome.org',
     packages=['vectorpack', 'vectorpack.test'],
-    #ext_modules=[Extension("packs", ["vectorpack/packs.py"])],
+    ext_modules=[Extension("packs", ["vectorpack/packs.py"])],
     url='http://pypi.python.org/pypi/VectorPack/',
     license='LICENSE.txt',
     description='Vector Packing Heurisitcs',
@@ -31,7 +31,6 @@ setup(
       'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
       'Topic :: Scientific/Engineering'
     ],
-    cmdclass = {'test': PyTest},
-    # cmdclass = {'test': PyTest, 'build_ext' : build_ext},
+    cmdclass = {'test': PyTest, 'build_ext' : build_ext},
     # install_requires=[ "NumPy" ], FIXME: not supported in distutils?
 )
