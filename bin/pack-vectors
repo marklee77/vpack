@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# FIXME: own custom classes or numpy arrays?
 
 from argparse import ArgumentParser
 from collections import Counter
@@ -90,7 +91,7 @@ def main(argv=None):
                         help='bin sorting algorithm')
     parser.add_argument('-S', '--select', default='none', 
                         help='pairwise selection algorithm')
-    parser.add_argument('-s', '--split', default=1, type=int,
+    parser.add_argument('-s', '--split', default=0, type=int,
                         help='split the problem')
 
     args = parser.parse_args()
@@ -110,8 +111,7 @@ def main(argv=None):
 
     mapping = []
 
-    # FIXME: read as tuples and use sets?
-    if args.split > 1:
+    if args.split > 0:
         start_time = time.process_time()
         enum_items = set(enumerate(tuple(item) for item in items))
         enum_bins = set(enumerate(tuple(bin_) for bin_ in bins))
