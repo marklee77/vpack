@@ -16,10 +16,7 @@ def _pack_by_items(
             mapping[i] = b
             bins[b] -= items[i]
         except ValueError:
-            return None
-
-    return mapping
-
+            return
 
 def _pack_by_bins(
     items, item_idxs, bins, bin_idxs, select_key, mapping):
@@ -37,9 +34,7 @@ def _pack_by_bins(
                 break
 
     if len(item_idxs) > 0:
-        return None
-
-    return mapping
+        return
 
 
 # FIXME: this could be smarter...for each item build a list of fitting bins...
@@ -61,31 +56,37 @@ def _pack_by_product(
             break
 
     if len(item_idxs) > 0:
-        return None
+        return
 
-    return mapping
-
-def _pack(items, bins, packer, item_key, bin_key, select_key):
+def _pack(items, bins, pack, item_key, bin_key, select_key):
 
     items_copy = None
     if items is not None:
-        items_copy = [array(item, copy=True) for item in items]
+        items_copy = [array(item, copy=True, dtype=int) for item in items]
+
+    item_idxs = sorted(list(range(len(items_copy))),
+                       key=lambda i: item_key(items_copy[i]))
 
     bins_copy = None
     if bins is not None:
-        bins_copy = [array(bin_, copy=True) for bin_ in bins]
+        bins_copy = [array(bin_, copy=True, dtype=int) for bin_ in bins]
 
-    item_idxs = sorted(range(len(items)), key=lambda i: item_key(items[i]))
-    bin_idxs = sorted(range(len(bins)), key=lambda b: bin_key(bins[b]))
+    bin_idxs = sorted(list(range(len(bins_copy))), 
+                      key=lambda b: bin_key(bins_copy[b]))
 
     @wraps(select_key)
     def wrapped_select_key(i, b): 
         return select_key(items_copy[i], bins_copy[b])
 
     mapping = [None] * len(items_copy)
-    
-    return packer(items_copy, item_idxs, bins_copy, bin_idxs, 
-                  wrapped_select_key, mapping)
+
+    pack(items_copy, item_idxs, bins_copy, bin_idxs, wrapped_select_key, 
+         mapping)
+
+    if None in mapping:
+        return None
+
+    return mapping
 
 
 def pack_by_items(

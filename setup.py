@@ -19,7 +19,7 @@ setup(
     author='Mark Stillwell',
     author_email='marklee@fortawesome.org',
     packages=['vectorpack', 'vectorpack.test'],
-    ext_modules=[Extension("packs", ["vectorpack/packs.py"])],
+    #ext_modules=[Extension("packs", ["vectorpack/packs.py"])],
     url='http://pypi.python.org/pypi/VectorPack/',
     license='LICENSE.txt',
     description='Vector Packing Heurisitcs',
