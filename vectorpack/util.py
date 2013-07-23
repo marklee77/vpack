@@ -8,7 +8,8 @@ def verify_mapping(items=None, bins=None, mapping=None):
         return False
     allocs = [array([0] * len(bin_)) for bin_ in bins]
     for item, binidx in zip(items, mapping):
-        allocs[binidx] += item
+        if binidx is not None:
+            allocs[binidx] += item
     if min((alloc <= bin_).all() for alloc, bin_ in zip(allocs, bins)):
         return True
     return False

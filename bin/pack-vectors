@@ -3,6 +3,7 @@
 
 from argparse import ArgumentParser
 from collections import Counter
+from datetime import datetime
 from functools import partial
 from os.path import isfile
 from random import sample
@@ -10,6 +11,7 @@ from sys import stdin, stdout
 import time
 
 from numpy import array
+from pymongo import MongoClient
 from yaml import load as yload, dump as ydump
 
 try:
@@ -81,8 +83,8 @@ def parse_select_cmdline(sortcmd):
 def main(argv=None):
 
     parser = ArgumentParser(description="Solve a vector packing problem.")
-    parser.add_argument('-i', '--inputfile', help='input file')
-    parser.add_argument('-o', '--outputfile', default='-', help='output file')
+    parser.add_argument('-i', '--input', help='input file')
+    parser.add_argument('-o', '--output', default='-', help='output file')
     parser.add_argument('-P', '--pack', default='pack_by_bins', 
                         help='packing algorithm')
     parser.add_argument('-I', '--itemsort', default='none', 
@@ -97,10 +99,10 @@ def main(argv=None):
     args = parser.parse_args()
 
     problem = {}
-    if isfile(args.inputfile):
-        problem = yload(open(args.inputfile, 'r'), Loader=YLoader)
+    if isfile(args.input):
+        problem = yload(open(args.input, 'r'), Loader=YLoader)
     else:
-        raise SystemExit("error: can't find file %s" % args.inputfile)
+        raise SystemExit("error: can't find file %s" % args.input)
 
     items = problem.get('items', None)
     bins = problem.get('bins', None)
@@ -138,7 +140,10 @@ def main(argv=None):
                 mapping = None
                 break
             for i, b in enumerate(mapping_tmp):
-                mapping[enum_items_sublist[i][0]] = enum_bins_sublist[b][0]
+                if b is None:
+                    mapping[enum_items_sublist[i][0]] = None
+                else:
+                    mapping[enum_items_sublist[i][0]] = enum_bins_sublist[b][0]
         stop_time = time.process_time()
                 
     else:
@@ -154,14 +159,20 @@ def main(argv=None):
         'itemsort' : args.itemsort,
         'binsort' : args.binsort,
         'select' : args.select,
-        'success' : mapping is not None,
+        'datetime' : datetime.now(),
+        'failcount' : mapping.count(None),
         'mapping' : mapping,
         'bincount' : len(Counter(mapping)),
         'runtime' : stop_time - start_time,
         'verified' : verify_mapping(items=items, bins=bins, mapping=mapping)
     }
 
-    print(ydump(solution, Dumper=YDumper))
+    mongoclient = MongoClient('mongodb://localhost')
+    test = mongoclient.test.test
+    test.insert(solution)
+    mongoclient.close()
+
+    #print(ydump(solution, Dumper=YDumper))
     
 
 if __name__ == "__main__":

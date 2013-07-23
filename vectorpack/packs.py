@@ -83,9 +83,6 @@ def _pack(items, bins, pack, item_key, bin_key, select_key):
     pack(items_copy, item_idxs, bins_copy, bin_idxs, wrapped_select_key, 
          mapping)
 
-    if None in mapping:
-        return None
-
     return mapping
 
 
