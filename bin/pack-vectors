@@ -11,7 +11,7 @@ from sys import stdin, stdout
 import time
 
 from numpy import array
-from pymongo import MongoClient
+from pymongo import MongoClient, uri_parser
 from yaml import load as yload, dump as ydump
 
 try:
@@ -93,7 +93,7 @@ def main(argv=None):
                         help='bin sorting algorithm')
     parser.add_argument('-S', '--select', default='none', 
                         help='pairwise selection algorithm')
-    parser.add_argument('-s', '--split', default=0, type=int,
+    parser.add_argument('-s', '--split', default=1, type=int,
                         help='split the problem')
 
     args = parser.parse_args()
@@ -110,48 +110,16 @@ def main(argv=None):
     item_key = parse_sort_cmdline(args.itemsort)
     bin_key = parse_sort_cmdline(args.binsort)
     select_key = parse_select_cmdline(args.select)
+    split = max(1, args.split)
+
 
     mapping = []
 
-    if args.split > 0:
-        # FIXME? alternate implementation would be to generate set of indexes,
-        # build map from that, might be more elegant.
-        start_time = time.process_time()
-        enum_items = set(enumerate(tuple(item) for item in items))
-        enum_bins = set(enumerate(tuple(bin_) for bin_ in bins))
-        enum_items_sublist_size = int((float(len(items)) / args.split) + 0.5)
-        enum_bins_sublist_size = int((float(len(bins)) / args.split) + 0.5)
-        mapping = [None] * len(items)
-        for i in range(args.split):
-            enum_items_sublist = list(enum_items)
-            if enum_items_sublist_size < len(enum_items_sublist):
-                enum_items_sublist = sample(enum_items, enum_items_sublist_size)
-            enum_items -= set(enum_items_sublist)
-            enum_bins_sublist = list(enum_bins)
-            if enum_bins_sublist_size < len(enum_bins_sublist):
-                enum_bins_sublist = sample(enum_bins, enum_bins_sublist_size)
-            enum_bins -= set(enum_bins_sublist)
-            items_tmp = [i for pi, i in enum_items_sublist]
-            bins_tmp = [b for pb, b in enum_bins_sublist]
-            mapping_tmp = pack(items=items_tmp, bins=bins_tmp, 
-                           item_key=item_key, bin_key=bin_key, 
-                           select_key=select_key)
-            if mapping_tmp is None:
-                mapping = None
-                break
-            for i, b in enumerate(mapping_tmp):
-                if b is None:
-                    mapping[enum_items_sublist[i][0]] = None
-                else:
-                    mapping[enum_items_sublist[i][0]] = enum_bins_sublist[b][0]
-        stop_time = time.process_time()
-                
-    else:
-        start_time = time.process_time()
-        mapping = pack(items=items, bins=bins, 
-                       item_key=item_key, bin_key=bin_key, 
-                       select_key=select_key)
-        stop_time = time.process_time()
+    start_time = time.process_time()
+    mapping = pack(items=items, bins=bins, 
+                   item_key=item_key, bin_key=bin_key, 
+                   select_key=select_key, split=split)
+    stop_time = time.process_time()
 
     solution = {
         'problem-argshash' : problem.get('argshash', None),
@@ -167,13 +135,28 @@ def main(argv=None):
         'verified' : verify_mapping(items=items, bins=bins, mapping=mapping)
     }
 
-    mongoclient = MongoClient('mongodb://localhost')
-    test = mongoclient.test.test
-    test.insert(solution)
-    mongoclient.close()
-
-    #print(ydump(solution, Dumper=YDumper))
-    
+    # FIXME: obviously this should be done before finding the packing, but the
+    # MongoClient api is kind of bone-headed...
+    if args.output.startswith("mongodb://"):
+        try:
+            dbinfo = uri_parser.parse_uri(args.output)
+            host, port = dbinfo['nodelist'][0]
+            db, collection = dbinfo['database'].split('/')
+            username = dbinfo['username']
+            password = dbinfo['password']
+            connect_url = host + ':' + str(port)
+            if username is not None and password is not None:
+                connect_url = username + ':' + password + '@' + connect_url
+            connect_url = 'mongodb://' + connect_url
+        except (AttributeError, ValueError):
+            print('Required mongodb output url format is '
+                  '"mongodb://[user:pass@]host[:port]/database/collection"')
+        mclient = MongoClient(connect_url)
+        mcoll = mclient[db][collection]
+        mcoll.insert(solution)
+        mclient.close()
+    else:
+        print(ydump(solution, Dumper=YDumper))
 
 if __name__ == "__main__":
     main() 

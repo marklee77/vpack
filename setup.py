@@ -15,7 +15,7 @@ class PyTest(Command):
 
 setup(
     name='VectorPack',
-    version='0.1.5',
+    version='0.1.6',
     author='Mark Stillwell',
     author_email='marklee@fortawesome.org',
     packages=['vectorpack', 'vectorpack.test'],

@@ -1,6 +1,7 @@
 from itertools import product
 from functools import wraps
 from numpy import array
+from random import seed, sample
 
 from .util import zero
 
@@ -58,21 +59,21 @@ def _pack_by_product(
     if len(item_idxs) > 0:
         return
 
-def _pack(items, bins, pack, item_key, bin_key, select_key):
+def _pack(items, bins, pack, item_key, bin_key, select_key, split):
 
     items_copy = None
     if items is not None:
         items_copy = [array(item, copy=True, dtype=int) for item in items]
 
-    item_idxs = sorted(list(range(len(items_copy))),
-                       key=lambda i: item_key(items_copy[i]))
+    num_items = len(items_copy)
+    item_idxs = list(range(num_items))
 
     bins_copy = None
     if bins is not None:
         bins_copy = [array(bin_, copy=True, dtype=int) for bin_ in bins]
 
-    bin_idxs = sorted(list(range(len(bins_copy))), 
-                      key=lambda b: bin_key(bins_copy[b]))
+    num_bins = len(bins_copy)
+    bin_idxs = list(range(num_bins))
 
     @wraps(select_key)
     def wrapped_select_key(i, b): 
@@ -80,25 +81,41 @@ def _pack(items, bins, pack, item_key, bin_key, select_key):
 
     mapping = [None] * len(items_copy)
 
-    pack(items_copy, item_idxs, bins_copy, bin_idxs, wrapped_select_key, 
-         mapping)
+    items_sublist_size = num_items // split
+    items_sublist_lbs = list(range(0, num_items + 1 - items_sublist_size, 
+                                   items_sublist_size))
+
+    bins_sublist_size = num_bins // split
+    bins_sublist_lbs = list(range(0, num_bins + 1 - bins_sublist_size, 
+                                  bins_sublist_size))
+    
+    bounds = list(zip(items_sublist_lbs, items_sublist_lbs[1:] + [num_items+1],
+                 bins_sublist_lbs, bins_sublist_lbs[1:] + [num_bins+1]))
+
+    for item_idxs_lb, item_idxs_ub, bin_idxs_lb, bin_idxs_ub in bounds:
+        item_idxs_sublist = item_idxs[item_idxs_lb:item_idxs_ub]
+        item_idxs_sublist.sort(key=lambda i: item_key(items_copy[i]))
+        bin_idxs_sublist = bin_idxs[bin_idxs_lb:bin_idxs_ub]
+        bin_idxs_sublist.sort(key=lambda b: bin_key(bins_copy[b]))
+        pack(items_copy, item_idxs_sublist, bins_copy, bin_idxs_sublist, 
+             wrapped_select_key, mapping)
 
     return mapping
 
 
 def pack_by_items(
-    items=None, bins=None, item_key=zero, bin_key=zero, select_key=zero):
-    return _pack(items, bins, _pack_by_items, item_key, bin_key, select_key)
+    items=None, bins=None, item_key=zero, bin_key=zero, select_key=zero, split=1):
+    return _pack(items, bins, _pack_by_items, item_key, bin_key, select_key, split)
 
 
 def pack_by_bins(
-    items=None, bins=None, item_key=zero, bin_key=zero, select_key=zero):
-    return _pack(items, bins, _pack_by_bins, item_key, bin_key, select_key)
+    items=None, bins=None, item_key=zero, bin_key=zero, select_key=zero, split=1):
+    return _pack(items, bins, _pack_by_bins, item_key, bin_key, select_key, split)
 
 
 def pack_by_product(
-    items=None, bins=None, item_key=zero, bin_key=zero, select_key=zero):
-    return _pack(items, bins, _pack_by_product, item_key, bin_key, select_key)
+    items=None, bins=None, item_key=zero, bin_key=zero, select_key=zero, split=1):
+    return _pack(items, bins, _pack_by_product, item_key, bin_key, select_key, split)
 
 PACKS_BY_NAME = {
     "pack_by_items"   : pack_by_items,
