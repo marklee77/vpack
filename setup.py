@@ -1,6 +1,19 @@
+from os import path, system
+
 from distutils.core import setup, Command
+from distutils.command.install import install
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
+
+class my_install(install):
+    def run(self):
+        install.run(self)
+        try:
+            githash = open('.git/refs/heads/master').read()[:-1]
+            system('sed -i /GITHASH/s/GITHASH/' + githash + '/ ' + 
+                   path.join(self.install_scripts, 'pack-vectors'))
+        except IOError:
+            pass
 
 class PyTest(Command):
     user_options = []
@@ -19,6 +32,7 @@ setup(
     author='Mark Stillwell',
     author_email='marklee@fortawesome.org',
     packages=['vectorpack', 'vectorpack.test'],
+    scripts=['bin/pack-vectors', 'bin/generate-vectorpack-problem'],
     #ext_modules=[Extension("packs", ["vectorpack/packs.py"])],
     url='http://pypi.python.org/pypi/VectorPack/',
     license='LICENSE.txt',
@@ -31,6 +45,6 @@ setup(
       'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
       'Topic :: Scientific/Engineering'
     ],
-    cmdclass = {'test': PyTest, 'build_ext' : build_ext},
+    cmdclass = {'test': PyTest, 'build_ext' : build_ext, 'install': my_install},
     # install_requires=[ "NumPy" ], FIXME: not supported in distutils?
 )

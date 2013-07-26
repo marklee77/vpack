@@ -123,6 +123,7 @@ def main(argv=None):
 
     solution = {
         'problem-argshash' : problem.get('argshash', None),
+        'solver-githash' : 'GITHASH',
         'pack' : args.pack,
         'itemsort' : args.itemsort,
         'binsort' : args.binsort,
