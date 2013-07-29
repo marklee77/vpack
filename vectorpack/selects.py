@@ -32,9 +32,12 @@ def dimension_to_rank(v):
     return d2r
 
 
-def pp_select(item, bin_, window_size=None):
+def pp_select(item, bin_, window_size=None, w=None):
     if window_size is None:
-        window_size = len(bin_)
+        if w is not None:
+            window_size = w
+        else:
+            window_size = len(bin_)
     elif window_size == 0:
         return None
     d2r_i = dimension_to_rank(item)
@@ -42,9 +45,12 @@ def pp_select(item, bin_, window_size=None):
     return [d2r_i[d] for d in r2d_b[:window_size]]
 
 
-def cp_select(item, bin_, window_size=None):
+def cp_select(item, bin_, window_size=None, w=None):
     if window_size is None:
-        window_size = len(bin_)
+        if w is not None:
+            window_size = w
+        else:
+            window_size = len(bin_)
     elif window_size == 0:
         return None
     largest_item_dims = set(rank_to_dimension(item)[:window_size])
