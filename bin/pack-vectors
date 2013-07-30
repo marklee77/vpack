@@ -112,33 +112,18 @@ def main(argv=None):
     select_key = parse_select_cmdline(args.select)
     split = max(1, args.split)
 
-
-    mapping = []
-
-    start_time = time.process_time()
-    mapping = pack(items=items, bins=bins, 
-                   item_key=item_key, bin_key=bin_key, 
-                   select_key=select_key, split=split)
-    stop_time = time.process_time()
-
     solution = {
         'problem-argshash' : problem.get('argshash', None),
-        'solver-githash' : 'GITHASH',
         'pack' : args.pack,
         'itemsort' : args.itemsort,
         'binsort' : args.binsort,
         'select' : args.select,
         'split' : split,
-        'datetime' : datetime.now(),
-        'mapping' : mapping,
-        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
-        'failcount' : mapping.count(None),
-        'bincount' : len(Counter(mapping)),
-        'runtime' : stop_time - start_time,
     }
 
-    # FIXME: obviously this should be done before finding the packing, but the
-    # MongoClient api is kind of bone-headed...
+    # FIXME: hacky
+    mclient = None
+    mcoll = None
     if args.output.startswith("mongodb://"):
         try:
             dbinfo = uri_parser.parse_uri(args.output)
@@ -151,10 +136,32 @@ def main(argv=None):
                 connect_url = username + ':' + password + '@' + connect_url
             connect_url = 'mongodb://' + connect_url
         except (AttributeError, ValueError):
-            print('Required mongodb output url format is '
-                  '"mongodb://[user:pass@]host[:port]/database/collection"')
+            raise SystemExit('Required mongodb output url format is ' 
+                '"mongodb://[user:pass@]host[:port]/database/collection"')
         mclient = MongoClient(connect_url)
         mcoll = mclient[db][collection]
+        if mcoll.find_one(solution) is not None:
+            raise SystemExit('Solution To This Problem Already Exists!')
+
+    mapping = []
+
+    start_time = time.process_time()
+    mapping = pack(items=items, bins=bins, 
+                   item_key=item_key, bin_key=bin_key, 
+                   select_key=select_key, split=split)
+    stop_time = time.process_time()
+
+    solution.update({
+        'solver-githash' : 'GITHASH',
+        'datetime' : datetime.now(),
+        'mapping' : mapping,
+        'failcount' : mapping.count(None),
+        'bincount' : len(Counter(mapping)),
+        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
+        'runtime' : stop_time - start_time,
+    })
+
+    if mcoll is not None and mclient is not None:
         mcoll.insert(solution)
         mclient.close()
     else:
