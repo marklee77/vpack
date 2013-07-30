@@ -40,6 +40,7 @@ def pp_select(item, bin_, window_size=None, w=None):
             window_size = len(bin_)
     elif window_size == 0:
         return None
+    window_size = min(window_size, len(bin_))
     d2r_i = dimension_to_rank(item)
     r2d_b = rank_to_dimension(bin_)
     return [d2r_i[d] for d in r2d_b[:window_size]]
@@ -53,6 +54,7 @@ def cp_select(item, bin_, window_size=None, w=None):
             window_size = len(bin_)
     elif window_size == 0:
         return None
+    window_size = min(window_size, len(item), len(bin_))
     largest_item_dims = set(rank_to_dimension(item)[:window_size])
     largest_bin_dims = set(rank_to_dimension(bin_)[:window_size])
     return -len(largest_item_dims & largest_bin_dims)

@@ -128,12 +128,13 @@ def main(argv=None):
         'itemsort' : args.itemsort,
         'binsort' : args.binsort,
         'select' : args.select,
+        'split' : split,
         'datetime' : datetime.now(),
-        'failcount' : mapping.count(None),
         'mapping' : mapping,
+        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
+        'failcount' : mapping.count(None),
         'bincount' : len(Counter(mapping)),
         'runtime' : stop_time - start_time,
-        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping)
     }
 
     # FIXME: obviously this should be done before finding the packing, but the
