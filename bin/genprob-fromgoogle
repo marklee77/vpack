@@ -18,11 +18,9 @@ def main(argv=None):
     parser.add_argument('-i', '--indexfile', 
                         help='path to google task_usage-startend-index file')
 
-    parser.add_argument('-c', '--cpuslack', 
-                        help='cpu slack')
+    parser.add_argument('-c', '--cpuslack', help='cpu slack')
 
-    parser.add_argument('-m', '--memslack', 
-                        help='memory slack')
+    parser.add_argument('-m', '--memslack', help='memory slack')
     args = parser.parse_args()
 
     random.seed(args.seed) 
@@ -52,7 +50,9 @@ def main(argv=None):
                         'sample_portion', 'agg_type'])
         for fname in file_list)
     task_population = usage_data[(usage_data['start_time'] <= moment) &
-                            (moment <= usage_data['end_time'])]
+                            (moment <= usage_data['end_time']) &
+                            ((usage_data['cpu_rate'] > 0.0) |
+                             (usage_data['canonical_mem_usage'] > 0.0))]
 
     # get machine data from google
     machine_events = pd.read_csv(
@@ -64,36 +64,25 @@ def main(argv=None):
     machine_events = machine_events[machine_events['timestamp'] <= moment].sort(
         columns=['timestamp'])
    
-    machine_population = dict()
-    for event in machine_events.irows():
-        timestamp = int(timestamp_str)
-        event_type = int(event_type_str)
-        if timestamp <= moment:
-            if event_type in [0, 2]:
-                try:
-                    cpu = float(cpu_str)
-                    mem = float(mem_str)
-                    machine_population[machine_id] = (cpu, mem)
-                except ValueError:
-                    pass
-            elif event_type == 1:
-                del machine_population[machine_id]
+    machine_stats = dict()
+    for index, event in machine_events.iterrows():
+        event_type = event['event_type']
+        machine_id = event['machine_id']
+        cpu = event['cpu']
+        mem = event['mem']
+        if event_type in [0, 2]:
+            machine_stats[machine_id] = (machine_id, cpu, mem)
+        elif event_type == 1:
+            del machine_stats[machine_id]
+
+    machine_population = pd.DataFrame(machine_stats.values(), 
+                                      columns=['machine_id', 'cpu', 'mem'])
             
-    print len(machine_population), len(task_population)
-    print "cpu:", sum(cpu for cpu, mem in task_population.values()), "/", sum(cpu for cpu, mem in machine_population.values()), \
-          sum(cpu for cpu, mem in task_population.values()) / sum(cpu for cpu, mem in machine_population.values())
-
-    print "mem:", sum(mem for cpu, mem in task_population.values()), "/", sum(mem for cpu, mem in machine_population.values()), \
-          sum(mem for cpu, mem in task_population.values()) / sum(mem for cpu, mem in machine_population.values())
-
-    task_sample = random.sample(task_population.values(), 4096)
-    machine_sample = random.sample(machine_population.values(), 512) 
-    print len(machine_sample), len(task_sample)
-    print "cpu:", sum(cpu for cpu, mem in task_sample), "/", sum(cpu for cpu, mem in machine_sample), \
-          sum(cpu for cpu, mem in task_sample) / sum(cpu for cpu, mem in machine_sample)
-    print "mem:", sum(mem for cpu, mem in task_sample), "/", sum(mem for cpu, mem in machine_sample), \
-          sum(mem for cpu, mem in task_sample) / sum(mem for cpu, mem in machine_sample)
-    
+    task_sample = random.sample(
+        list(task_population[['cpu_rate', 'canonical_mem_usage']].itertuples()),
+        4096)
+    machine_sample = random.sample(
+        list(machine_population[['cpu', 'mem']].itertuples()), 512)
 
 if __name__ == "__main__":
     main()
