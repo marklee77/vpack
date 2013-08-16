@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 def main(argv=None):
     from argparse import ArgumentParser
@@ -7,7 +7,7 @@ def main(argv=None):
     import random
     import sys
 
-    from pandas import read_csv
+    import pandas as pd
 
     parser = ArgumentParser(
         description="Generat a random problem instance using google data.")
@@ -18,45 +18,54 @@ def main(argv=None):
     parser.add_argument('-i', '--indexfile', 
                         help='path to google task_usage-startend-index file')
 
+    parser.add_argument('-c', '--cpuslack', 
+                        help='cpu slack')
+
+    parser.add_argument('-m', '--memslack', 
+                        help='memory slack')
     args = parser.parse_args()
 
     random.seed(args.seed) 
 
     # get task population data from google dataset
-    file_index = read_csv(args.indexfile, header=None, index_col=False,
-                          names=['filename', 'min_timestamp', 'max_timestamp'])
+    file_index = pd.read_csv(
+        args.indexfile, header=None, index_col=False,
+        names=['filename', 'min_timestamp', 'max_timestamp'])
     min_timestamp = min(file_index['min_timestamp'])
     max_timestamp = max(file_index['max_timestamp'])
     moment = random.randint(min_timestamp, max_timestamp)
     task_population = dict()
-    print len(file_index)
-    df = file_index[file_index['min_timestamp'] <= moment <= file_index['max_timestamp']]
-    print len(df)
-    sys.exit(0)
+    file_list = file_index[(file_index['min_timestamp'] <= moment) &
+                       (moment <= file_index['max_timestamp'])]['filename']
 
-    for row in file_index.iterrows():
-        print row
-
-        sys.exit(0)
-        if row[1] <= moment <= row[2]:
-            usage_file = GzipFile(os.path.join(args.googledir, 'task_usage', row[0]))
-            for line in usage_file:
-                fields = line.split(',')
-                start_time = int(fields[0])
-                end_time = int(fields[1])
-                if start_time <= moment <= end_time:
-                    job_id = int(fields[2])
-                    task_idx = int(fields[3])
-                    cpu = float(fields[5])
-                    mem = float(fields[6])
-                    if cpu > 0.0 or mem > 0.0:
-                        task_population[(job_id, task_idx)] = (cpu, mem)
+    usage_data = pd.concat(
+        pd.read_csv(
+                 os.path.join(args.googledir, 'task_usage', fname),
+                 compression='gzip',
+                 names=['start_time', 'end_time', 
+                        'job_id', 'task_idx', 'machine_id', 
+                        'cpu_rate', 'canonical_mem_usage', 
+                        'assigned_mem_usage', 
+                        'unmapped_page_cache', 'total_page_cache', 
+                        'max_mem_usage', 'disk_io', 'local_disk_space_usage', 
+                        'max_cpu_rate', 'max_disk_io_time', 'cpi', 'mapi', 
+                        'sample_portion', 'agg_type'])
+        for fname in file_list)
+    task_population = usage_data[(usage_data['start_time'] <= moment) &
+                            (moment <= usage_data['end_time'])]
 
     # get machine data from google
-    machine_event_data = csvreader(GzipFile(os.path.join(args.googledir,
-                                   'machine_events/part-00000-of-00001.csv.gz')))
+    machine_events = pd.read_csv(
+        os.path.join(args.googledir, 
+                     'machine_events/part-00000-of-00001.csv.gz'),
+        compression='gzip',
+        names=['timestamp', 'machine_id', 'event_type', 'platform_id', 
+               'cpu', 'mem'])
+    machine_events = machine_events[machine_events['timestamp'] <= moment].sort(
+        columns=['timestamp'])
+   
     machine_population = dict()
-    for timestamp_str, machine_id, event_type_str, platform_id, cpu_str, mem_str in machine_event_data:
+    for event in machine_events.irows():
         timestamp = int(timestamp_str)
         event_type = int(event_type_str)
         if timestamp <= moment:
