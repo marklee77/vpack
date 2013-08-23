@@ -3,6 +3,7 @@
 def main(argv=None):
     from argparse import ArgumentParser
     from hashlib import sha1
+    from math import ceil
     import os
     import random
 
@@ -29,41 +30,25 @@ def main(argv=None):
     parser.add_argument('-b', '--num_bins', type=int,
                         help='number of bins')
 
-    parser.add_argument('-c', '--cpuslack', help='cpu slack')
+    parser.add_argument('-c', '--cpuslack', type=float, default=None, 
+                        help='cpu slack')
 
-    parser.add_argument('-m', '--memslack', help='memory slack')
+    parser.add_argument('-m', '--memslack', type=float, default=None,
+                        help='memory slack')
     args = parser.parse_args()
+
+    print('argshash: ' + sha1(str(vars(args)).encode('utf-8')).hexdigest())
+    print dump({'args' : vars(args)}, Dumper=Dumper),
 
     random.seed(args.seed) 
 
-    # get task population data from google dataset
+    # get range of mements and pick random moment from file index
     file_index = pd.read_csv(
         args.indexfile, header=None, index_col=False,
         names=['filename', 'min_timestamp', 'max_timestamp'])
     min_timestamp = min(file_index['min_timestamp'])
     max_timestamp = max(file_index['max_timestamp'])
     moment = random.randint(min_timestamp, max_timestamp)
-    task_population = dict()
-    file_list = file_index[(file_index['min_timestamp'] <= moment) &
-                       (moment <= file_index['max_timestamp'])]['filename']
-
-    usage_data = pd.concat(
-        pd.read_csv(
-                 os.path.join(args.googledir, 'task_usage', fname),
-                 compression='gzip',
-                 names=['start_time', 'end_time', 
-                        'job_id', 'task_idx', 'machine_id', 
-                        'cpu_rate', 'canonical_mem_usage', 
-                        'assigned_mem_usage', 
-                        'unmapped_page_cache', 'total_page_cache', 
-                        'max_mem_usage', 'disk_io', 'local_disk_space_usage', 
-                        'max_cpu_rate', 'max_disk_io_time', 'cpi', 'mapi', 
-                        'sample_portion', 'agg_type'])
-        for fname in file_list)
-    task_population = usage_data[(usage_data['start_time'] <= moment) &
-                            (moment <= usage_data['end_time']) &
-                            ((usage_data['cpu_rate'] > 0.0) |
-                             (usage_data['canonical_mem_usage'] > 0.0))]
 
     # get machine data from google
     machine_events = pd.read_csv(
@@ -71,14 +56,14 @@ def main(argv=None):
                      'machine_events/part-00000-of-00001.csv.gz'),
         compression='gzip',
         names=['timestamp', 'machine_id', 'event_type', 'platform_id', 
-               'cpu', 'mem'])
+               'cpu', 'mem'],
+        index_col='machine_id')
     machine_events = machine_events[machine_events['timestamp'] <= moment].sort(
         columns=['timestamp'])
    
     machine_stats = dict()
-    for index, event in machine_events.iterrows():
+    for machine_id, event in machine_events.iterrows():
         event_type = event['event_type']
-        machine_id = event['machine_id']
         cpu = event['cpu']
         mem = event['mem']
         if event_type in [0, 2]:
@@ -86,21 +71,67 @@ def main(argv=None):
         elif event_type == 1:
             del machine_stats[machine_id]
 
-    machine_population = pd.DataFrame(machine_stats.values(), 
-                                      columns=['machine_id', 'cpu', 'mem'])
-            
-    task_sample = random.sample(
-        list(task_population[['cpu_rate', 'canonical_mem_usage']].itertuples()),
-        args.num_items)
-    items = [[int(1000 * cpu), int(1000 * mem)] for index, cpu, mem in task_sample]
-    machine_sample = random.sample(
-        list(machine_population[['cpu', 'mem']].itertuples()), args.num_bins)
-    bins = [[int(1000 * cpu), int(1000 * mem)] for index, cpu, mem in machine_sample]
+    machine_population = pd.DataFrame.from_records(
+        machine_stats.values(), columns=['machine_id', 'cpu', 'mem'],
+        index='machine_id')
 
-    print('argshash: ' + sha1(str(vars(args)).encode('utf-8')).hexdigest())
-    print dump({'args' : vars(args)}, Dumper=Dumper),
-    print dump({'items' : items }, Dumper=Dumper),
+    machine_sample = pd.DataFrame.from_records(random.sample(
+        list(machine_population[['cpu', 'mem']].itertuples()), args.num_bins),
+        columns=['machine_id', 'cpu', 'mem'], index='machine_id')
+
+    bins = [[int(ceil(1000 * cpu)), int(ceil(1000 * mem))] 
+            for _, cpu, mem in machine_sample.itertuples()]
+
     print dump({'bins' : bins }, Dumper=Dumper),
+
+    # get task population data from google dataset
+    task_population = dict()
+    file_list = file_index[(file_index['min_timestamp'] <= moment) &
+                       (moment <= file_index['max_timestamp'])]['filename']
+
+    usage_data = pd.concat(
+        pd.read_csv(
+            os.path.join(args.googledir, 'task_usage', fname),
+            compression='gzip',
+            names=['start_time', 'end_time', 
+                   'job_id', 'task_idx', 'machine_id',
+                   'cpu_rate', 'canonical_mem_usage', 'assigned_mem_usage', 
+                   'unmapped_page_cache', 'total_page_cache', 
+                   'max_mem_usage', 'disk_io', 'local_disk_space_usage', 
+                   'max_cpu_rate', 'max_disk_io_time', 'cpi', 'mapi', 
+                   'sample_portion', 'agg_type'],
+            index_col=['job_id', 'task_idx'])
+        for fname in file_list)
+
+    task_population = usage_data[(usage_data['start_time'] <= moment) & 
+                                 (moment <= usage_data['end_time']) &
+                                 ((usage_data['cpu_rate'] > 0.0) |
+                                  (usage_data['canonical_mem_usage'] > 0.0))]
+
+    task_sample = pd.DataFrame.from_records(random.sample(
+        list(task_population[['cpu_rate', 'canonical_mem_usage']].itertuples()),
+        args.num_items), 
+        columns=['task_id', 'cpu', 'mem'], index='task_id')
+
+    total_cpu_avail = sum(machine_sample['cpu'])
+    total_mem_avail = sum(machine_sample['mem'])
+    
+    total_cpu_req = sum(task_sample['cpu'])
+    total_mem_req = sum(task_sample['mem'])
+
+    cpu_multiplier = 1.0
+    if args.cpuslack is not None:
+        cpu_multiplier = (1.0 - args.cpuslack) * total_cpu_avail / total_cpu_req
+
+    mem_multiplier = 1.0
+    if args.memslack is not None:
+        mem_multiplier = (1.0 - args.memslack) * total_mem_avail / total_mem_req
+
+    items = [[int(ceil(1000 * cpu * cpu_multiplier)), 
+              int(ceil(1000 * mem * mem_multiplier))] 
+             for _, cpu, mem in task_sample.itertuples()]
+
+    print dump({'items' : items }, Dumper=Dumper),
 
 if __name__ == "__main__":
     main()

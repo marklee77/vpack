@@ -2,7 +2,7 @@ from functools import wraps
 
 from numpy.linalg import norm as lnorm
 
-from .sorts import maxratio, maxdiff
+from .sorts import maxratio, imaxratio, maxdiff
 from .util import zero
 
 """
@@ -73,6 +73,7 @@ SELECTS_BY_NAME = {
     "lnorm"      : make_select(lnorm),
     "max"        : make_select(max),
     "maxratio"   : make_select(maxratio),
+    "imaxratio"  : make_select(imaxratio),
     "maxdiff"    : make_select(maxdiff),
     "pp"         : pp_select,
     "cp"         : cp_select,

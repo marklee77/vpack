@@ -1,3 +1,9 @@
+try:
+    from sys import maxint 
+except ImportError:
+    # python3 workaround
+    from sys import maxsize as maxint
+
 from numpy.linalg import norm as lnorm
 
 from .util import zero
@@ -9,6 +15,13 @@ def maxratio(v):
         return float('inf')
     return float(maxval) / minval
 
+def imaxratio(v):
+    maxval = max(v)
+    minval = min(v)
+    if minval == 0.0:
+        return maxint
+    return 1000 * maxval // minval
+
 def maxdiff(v):
     return max(v) - min(v)
 
@@ -18,6 +31,7 @@ SORT_KEYS_BY_NAME = {
     "lnorm"     : lnorm,
     "max"       : max,
     "maxratio"  : maxratio,
+    "imaxratio" : imaxratio,
     "maxdiff"   : maxdiff
 }
 

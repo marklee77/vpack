@@ -1,7 +1,8 @@
 from itertools import product
 from functools import wraps
-from numpy import array
 from random import seed, sample
+
+from numpy import array
 
 from .util import zero
 
