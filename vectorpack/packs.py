@@ -1,4 +1,4 @@
-from itertools import product
+from itertools import accumulate, product # accumulate is python3 only...
 from functools import wraps
 from random import seed, sample
 
@@ -82,16 +82,18 @@ def _pack(items, bins, pack, item_key, bin_key, select_key, split):
 
     mapping = [None] * len(items_copy)
 
-    items_sublist_size = num_items // split
-    items_sublist_lbs = list(range(0, num_items + 1 - items_sublist_size, 
-                                   items_sublist_size))
-
-    bins_sublist_size = num_bins // split
-    bins_sublist_lbs = list(range(0, num_bins + 1 - bins_sublist_size, 
-                                  bins_sublist_size))
+    items_sublist_size, items_remaining = divmod(num_items, split)
+    items_sublist_ubs = list(accumulate(
+        [items_sublist_size] * (split - items_remaining) + 
+        [items_sublist_size+1] * items_remaining))
+        
+    bins_sublist_size, bins_remaining = divmod(num_bins, split)
+    bins_sublist_ubs = list(accumulate(
+        [bins_sublist_size] * (split - bins_remaining) + 
+        [bins_sublist_size+1] * bins_remaining))
     
-    bounds = list(zip(items_sublist_lbs, items_sublist_lbs[1:] + [num_items+1],
-                 bins_sublist_lbs, bins_sublist_lbs[1:] + [num_bins+1]))
+    bounds = list(zip([0] + items_sublist_ubs[:-1], items_sublist_ubs,
+                      [0] + bins_sublist_ubs[:-1], bins_sublist_ubs))
 
     for item_idxs_lb, item_idxs_ub, bin_idxs_lb, bin_idxs_ub in bounds:
         item_idxs_sublist = item_idxs[item_idxs_lb:item_idxs_ub]
