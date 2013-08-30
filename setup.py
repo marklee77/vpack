@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from os import path, system
 
 from distutils.core import setup, Command
