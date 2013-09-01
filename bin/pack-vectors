@@ -29,6 +29,7 @@ from vectorpack.sorts import get_sort_key_by_name
 from vectorpack.selects import get_select_by_name
 from vectorpack.util import verify_mapping, negate_func, zero
 
+import cProfile
 
 def parse_sort_cmdline(sortcmd):
     args = sortcmd.split(":")
@@ -145,11 +146,16 @@ def main(argv=None):
 
     mapping = []
 
+    #pr = cProfile.Profile()
+    #pr.enable()
     start_time = time.process_time()
     mapping = pack(items=items, bins=bins, 
                    item_key=item_key, bin_key=bin_key, 
                    select_key=select_key, split=split)
     stop_time = time.process_time()
+    #pr.disable()
+    #pr.create_stats()
+    #pr.dump_stats('pack-vectors.profile')
 
     solution.update({
         'solver-githash' : 'GITHASH',

@@ -35,7 +35,7 @@ setup(
     author_email='marklee@fortawesome.org',
     packages=['vectorpack', 'vectorpack.test'],
     scripts=['bin/pack-vectors', 'bin/generate-vectorpack-problem'],
-    #ext_modules=[Extension("packs", ["vectorpack/packs.py"])],
+    #ext_modules=[Extension("vectorpack.packs", ["vectorpack/packs.pyx"])],
     url='http://pypi.python.org/pypi/VectorPack/',
     license='LICENSE.txt',
     description='Vector Packing Heurisitcs',
