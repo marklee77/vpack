@@ -1,9 +1,9 @@
-from functools import wraps
+from functools import partial, wraps
 
-from numpy.linalg import norm as lnorm
+import numpy as np
 
 from .sorts import maxratio, imaxratio, maxdiff
-from .util import zero
+from .util import negate_func, zero
 
 """
     The basic approach from Leinberger 1999 is to find the most empty bin
@@ -70,7 +70,7 @@ def make_select(f):
 SELECTS_BY_NAME = {
     "none"       : zero,
     "sum"        : make_select(sum),
-    "lnorm"      : make_select(lnorm),
+    "lnorm"      : make_select(np.linalg.norm),
     "max"        : make_select(max),
     "maxratio"   : make_select(maxratio),
     "imaxratio"  : make_select(imaxratio),
@@ -86,3 +86,28 @@ def list_selects():
 
 def get_select_by_name(name):
     return SELECTS_BY_NAME[name]
+
+
+def parse_select_cmdline(sortcmd):
+    args = sortcmd.split(":")
+
+    arg = args.pop(0)
+    desc = False
+    if arg in [ "a", "d" ]:
+        if arg is "d":
+            desc = True
+        arg = args.pop(0)
+
+    sort_key = get_select_by_name(arg)
+
+    kwargs = {}
+    if args:
+        kwargs.update(yload("\n".join(arg.replace('=', ': ') for arg in args)))
+
+    if desc:
+        return partial(negate_func, sort_key, **kwargs)
+
+    if kwargs:
+        return partial(sort_key, **kwargs)
+
+    return sort_key
