@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+def main(argv=None):
+    from argparse import ArgumentParser
+    from hashlib import sha1
+    from math import ceil
+    import random
+    from yaml import dump
+    try:
+        from yaml import CDumper as Dumper
+    except ImportError:
+        from yaml import Dumper
+
+    parser = ArgumentParser(description="Generate a random problem instance.")
+    parser.add_argument('-s', '--seed', type=int, 
+                        help='seed for random number generator')
+    parser.add_argument('-i', '--num_items', type=int, help='number of items')
+    parser.add_argument('-c', '--class', type=int, default=1, dest='cls',
+                        help='class number from Caprara and Toth 2001')
+    parser.add_argument('-d', '--num_dimensions', type=int, default=2,
+                        help='number of dimensions')
+
+    args = parser.parse_args()
+
+    random.seed(args.seed) 
+
+    items = []
+    bins = []
+
+    if args.cls < 7:
+        if args.cls == 1:
+            alpha = 100
+            beta = 400
+        elif args.cls == 2:
+            alpha = 1
+            beta = 1000
+        elif args.cls == 3:
+            alpha = 200
+            beta = 800
+        elif args.cls == 4:
+            alpha = 50
+            beta = 200
+        elif args.cls == 5:
+            alpha = 25
+            beta = 100
+        elif args.cls == 6:
+            alpha = 20
+            beta = 100
+        if args.cls < 6:
+            capacity = 1000
+        else:
+            capacity = 150
+
+        items = [[random.randint(alpha, beta) 
+                  for i in range(args.num_dimensions)] 
+                 for j in range(args.num_items)]
+
+        bins = [[capacity] * args.num_dimensions] * args.num_items
+
+    elif args.cls < 9:
+        if args.num_dimensions != 2:
+            raise SystemExit("Generalizing instances from class " +
+                             str(args.num_dimensions) + 
+                             " to other than 2 dimensions is not supported.")
+        if args.cls == 7:
+            for i in range(args.num_items):
+                w = random.randint(20, 100)
+                v = random.randint(w - 10, w + 10)
+                items.append([w, v])
+        else:
+            for i in range(args.num_items):
+                w = random.randint(20, 100)
+                v = random.randint(110 - w, 130 - w)
+                items.append([w, v])
+        bins = [[150, 150]] * args.num_items
+
+    elif args.cls == 9:
+        items = [[random.randint(100, 400) 
+                  for i in range(args.num_dimensions)] 
+                 for j in range(args.num_items)]
+        dimtotals = [sum(dim) for dim in zip(*items)]
+        L = int(ceil(float(max(dimtotals))/1000))
+        caps = [int(ceil(float(dimtotal)/L)) for dimtotal in dimtotals]
+        bins = [caps] * args.num_items
+        pass
+
+    elif args.cls == 10:
+        if args.num_items % 3 != 0:
+            raise SystemExit("Class 10 requires number of items to be a " +
+                             "multiple of 3")
+        
+        items = [[random.randint(25, 50) 
+                  for i in range(args.num_dimensions)] 
+                 for j in range(args.num_items // 3 * 2)]
+
+        for i in range(args.num_items // 3):
+            items.append([100 - items[2*i][d] - items[2*i+1][d]
+                         for d in range(args.num_dimensions)])
+
+        bins = [[100] * args.num_dimensions] * args.num_items
+
+    print('note: Caprara and Toth, Class ' + str(args.cls))
+    print('argshash: ' + sha1(str(vars(args)).encode('utf-8')).hexdigest())
+    print(dump({'args' : vars(args)}, Dumper=Dumper), end='')
+    print(dump({'bins' : bins}, Dumper=Dumper), end='')
+    print(dump({'items' : items}, Dumper=Dumper), end='')
+
+if __name__ == "__main__":
+    main()
