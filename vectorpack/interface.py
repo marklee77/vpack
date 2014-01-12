@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from argparse import ArgumentParser
 from collections import Counter
 from datetime import datetime
 from functools import partial
@@ -18,10 +19,10 @@ try:
 except ImportError:
     from yaml import Dumper
 
-from .packs import get_pack_by_name
-from .sorts import get_sort_key_by_name
-from .selects import get_select_by_name
-from .util import verify_mapping, negate_func, zero
+from vectorpack.packs import get_pack_by_name
+from vectorpack.sorts import get_sort_key_by_name
+from vectorpack.selects import get_select_by_name
+from vectorpack.util import verify_mapping, negate_func
 
 def parse_sort_cmdline(sortcmd):
     args = sortcmd.split(":")
@@ -72,6 +73,45 @@ def parse_select_cmdline(sortcmd):
 
     return select_key
 
+def pack_vectors(**kwargs):
+
+    pack = kwargs.get('pack', 'pack_by_bins')
+    itemsort = kwargs.get('itemsort', 'none')
+    binsort = kwargs.get('binsort', 'none')
+    select = kwargs.get('select', 'none')
+    split = max(1, kwargs.get('split', 1))
+    problem = kwargs.get('problem', None)
+
+    pack_func = get_pack_by_name(pack)
+    item_key = parse_sort_cmdline(itemsort)
+    bin_key = parse_sort_cmdline(binsort)
+    select_key = parse_select_cmdline(select)
+
+    items = problem.get('items', None)
+    bins = problem.get('bins', None)
+
+    start_time = time.process_time()
+    mapping = pack_func(items=items, bins=bins, 
+                        item_key=item_key, bin_key=bin_key, 
+                        select_key=select_key, 
+                        split=split)
+    stop_time = time.process_time()
+
+    return {
+        'solver-githash' : 'GITHASH',
+        'problem-argshash' : problem.get('argshash', None),
+        'pack' : pack,
+        'itemsort' : itemsort,
+        'binsort' : binsort,
+        'select' : select,
+        'split' : split,
+        'datetime' : datetime.now(),
+        'mapping' : mapping,
+        'failcount' : mapping.count(None),
+        'bincount' : len(Counter(mapping)),
+        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
+        'runtime' : stop_time - start_time,
+    }
 
 def main(argv=None):
 
@@ -91,28 +131,13 @@ def main(argv=None):
 
     args = parser.parse_args()
 
-    problem = {}
+    args.problem = {}
     if isfile(args.input):
-        problem = yload(open(args.input, 'r'), Loader=Loader)
+        args.problem = yload(open(args.input, 'r'), Loader=Loader)
     else:
         raise SystemExit("error: can't find file %s" % args.input)
 
-    items = problem.get('items', None)
-    bins = problem.get('bins', None)
-    pack = get_pack_by_name(args.pack)
-    item_key = parse_sort_cmdline(args.itemsort)
-    bin_key = parse_sort_cmdline(args.binsort)
-    select_key = parse_select_cmdline(args.select)
-    split = max(1, args.split)
-
-    solution = {
-        'problem-argshash' : problem.get('argshash', None),
-        'pack' : args.pack,
-        'itemsort' : args.itemsort,
-        'binsort' : args.binsort,
-        'select' : args.select,
-        'split' : split,
-    }
+    solution = pack_vectors(**args.__dict__)
 
     # FIXME: hacky
     mclient = None
@@ -135,29 +160,6 @@ def main(argv=None):
         mcoll = mclient[db][collection]
         if mcoll.find_one(solution) is not None:
             raise SystemExit('Solution To This Problem Already Exists!')
-
-    mapping = []
-
-    #pr = cProfile.Profile()
-    #pr.enable()
-    start_time = time.process_time()
-    mapping = pack(items=items, bins=bins, 
-                   item_key=item_key, bin_key=bin_key, 
-                   select_key=select_key, split=split)
-    stop_time = time.process_time()
-    #pr.disable()
-    #pr.create_stats()
-    #pr.dump_stats('pack-vectors.profile')
-
-    solution.update({
-        'solver-githash' : 'GITHASH',
-        'datetime' : datetime.now(),
-        'mapping' : mapping,
-        'failcount' : mapping.count(None),
-        'bincount' : len(Counter(mapping)),
-        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
-        'runtime' : stop_time - start_time,
-    })
 
     if mcoll is not None and mclient is not None:
         mcoll.insert(solution)

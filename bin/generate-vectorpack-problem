@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# generate-vectorpack-problem a command-line utility for generating vectorpack
-# problem instances
+# generate-vectorpack-problem a command-line utility for generating 
+# vectorpack problem instances.
 #
 # Copyright (C) 2014 Mark Lee Stillwell 
 #
