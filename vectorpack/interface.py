@@ -1,35 +1,27 @@
 #!/usr/bin/env python3
-# FIXME: own custom classes or numpy arrays?
 
-from argparse import ArgumentParser
 from collections import Counter
 from datetime import datetime
 from functools import partial
 from os.path import isfile
-from random import sample
-from sys import stdin, stdout
 import time
 
-from numpy import array
-from pymongo import MongoClient, uri_parser
 from yaml import load as yload, dump as ydump
 
 try:
-    from yaml import CLoader as YLoader
+    from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Loader as YLoader
+    from yaml import Loader
 
 try:
-    from yaml import CDumper as YDumper
+    from yaml import CDumper as Dumper
 except ImportError:
-    from yaml import YDumper
+    from yaml import Dumper
 
-from vectorpack.packs import get_pack_by_name
-from vectorpack.sorts import get_sort_key_by_name
-from vectorpack.selects import get_select_by_name
-from vectorpack.util import verify_mapping, negate_func, zero
-
-#import cProfile
+from .packs import get_pack_by_name
+from .sorts import get_sort_key_by_name
+from .selects import get_select_by_name
+from .util import verify_mapping, negate_func, zero
 
 def parse_sort_cmdline(sortcmd):
     args = sortcmd.split(":")
@@ -101,7 +93,7 @@ def main(argv=None):
 
     problem = {}
     if isfile(args.input):
-        problem = yload(open(args.input, 'r'), Loader=YLoader)
+        problem = yload(open(args.input, 'r'), Loader=Loader)
     else:
         raise SystemExit("error: can't find file %s" % args.input)
 
@@ -171,7 +163,7 @@ def main(argv=None):
         mcoll.insert(solution)
         mclient.close()
     else:
-        print(ydump(solution, Dumper=YDumper))
+        print(ydump(solution, Dumper=Dumper))
 
 if __name__ == "__main__":
     main() 
