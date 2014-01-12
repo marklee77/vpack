@@ -34,7 +34,11 @@ setup(
     author='Mark Stillwell',
     author_email='marklee@fortawesome.org',
     packages=['vectorpack', 'vectorpack.test'],
-    scripts=['bin/pack-vectors', 'bin/generate-vectorpack-problem'],
+    scripts=[
+             'bin/pack-vectors', 
+             'bin/generate-vectorpack-problem',
+             'bin/generate-vectorpack-problem-caprara',
+    ],
     #ext_modules=[Extension("vectorpack.packs", ["vectorpack/packs.pyx"])],
     url='http://pypi.python.org/pypi/VectorPack/',
     license='LICENSE.txt',

@@ -1,51 +1,21 @@
 #!/usr/bin/env python3
-# FIXME: theoretically, slack and load should be vectors?
+# generate-vectorpack-problem a command-line utility for generating vectorpack
+# problem instances
+#
+# Copyright (C) 2014 Mark Lee Stillwell 
+#
+# This program is free software: you can redistribute it and/or modify it under 
+# the terms of the GNU General Public License as published by the Free Software 
+# Foundation, either version 3 of the License, or any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT 
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-def main(argv=None):
-    from argparse import ArgumentParser
-    from hashlib import sha1
-    import random
-    from yaml import dump
-    try:
-        from yaml import CDumper as Dumper
-    except ImportError:
-        from yaml import Dumper
-
-    parser = ArgumentParser(description="Generate a random problem instance.")
-    parser.add_argument('-s', '--seed', type=int, help='seed for random number generator')
-    parser.add_argument('-d', '--num_dimensions', type=int, help='number of dimensions')
-    parser.add_argument('-b', '--num_bins', type=int, help='number of bins')
-    parser.add_argument('-i', '--num_items', type=int, help='number of items')
-    parser.add_argument('-c', '--cov', type=float, help='bin dimension cov')
-    parser.add_argument('-k', '--slack', type=float, help='slack')
-    parser.add_argument('-n', '--note', help='note')
-
-    args = parser.parse_args()
-
-    random.seed(args.seed) 
-
-    bins = [[max(1, min(int(random.normalvariate(50, 50 * args.cov)), 100))
-              for i in range(args.num_dimensions)]
-              for j in range(args.num_bins)]
-
-    bindim_totals = [sum(bin_[i] for bin_ in bins) 
-                     for i in range(args.num_dimensions)]
-
-    items = [[random.randint(1, 100) for i in range(args.num_dimensions)] 
-             for j in range(args.num_items)]
-
-    itemdim_totals = [sum(item[i] for item in items)
-                      for i in range(args.num_dimensions)]
-
-    for item in items:
-        for i in range(args.num_dimensions):
-            item[i] = max(1, int(item[i] * (1.0 - args.slack) * 
-                                    bindim_totals[i] / itemdim_totals[i]))
-
-    print('argshash: ' + sha1(str(vars(args)).encode('utf-8')).hexdigest())
-    print(dump({'args' : vars(args)}, Dumper=Dumper), end='')
-    print(dump({'bins' : bins }, Dumper=Dumper), end='')
-    print(dump({'items' : items }, Dumper=Dumper), end='')
+from vectorpack.genprob import main
 
 if __name__ == "__main__":
     main()
