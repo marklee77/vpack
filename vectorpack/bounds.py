@@ -41,7 +41,7 @@ def generate_problem(**kwargs):
 
     return {
         'argshash' : 
-            sha1(str(sorted(list(kwargs.items()))).encode('utf-8')).hexdigest(),
+            sha1(str(sorted(list(kwargs))).encode('utf-8')).hexdigest(),
         'args' : kwargs,
         'bins' : bins,
         'items' : items
@@ -154,7 +154,7 @@ def generate_problem_caprara(**kwargs):
     return {
         'note' : 'Caprara and Toth, Class ' + str(cls),
         'argshash' : 
-            sha1(str(sorted(list(kwargs.items()))).encode('utf-8')).hexdigest(),
+            sha1(str(sorted(list(kwargs))).encode('utf-8')).hexdigest(),
         'args' : kwargs,
         'bins' : bins,
         'items' : items
