@@ -1,4 +1,6 @@
-from functools import partial 
+from functools import partial, reduce
+
+import operator
 
 try:
     from sys import maxint 
@@ -36,6 +38,7 @@ def maxdiff(v):
 SORT_KEYS_BY_NAME = {
     "none"      : zero,
     "sum"       : sum,
+    "prod"      : lambda v: reduce(operator.mul, v, 1),
     "lnorm"     : np.linalg.norm,
     "max"       : max,
     "maxratio"  : maxratio,
