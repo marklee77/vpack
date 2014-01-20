@@ -11,3 +11,4 @@ def bound_lc(problem=None):
     return max(int(ceil(float(sum(itemdim)) / max(bindim))) 
                for itemdim, bindim in zip(zip(*items), zip(*bins)))
 
+
