@@ -113,6 +113,55 @@ def pack_vectors(**kwargs):
         'runtime' : stop_time - start_time,
     }
 
+def pack_vectors_gabay2013vsv(**kwargs):
+    from vsvbp.container import Item, Bin
+
+    class IndexedItem(Item):
+        def __init__(self, requirements, index):
+            self.index = index
+            Item.__init__(self, requirements)
+
+    class IndexedBin(Bin):
+        def __init__(self, capacities, index):
+            self.index = index
+            Bin.__init__(self, capacities)
+
+    heuristic = kwargs.get('heuristic', None)
+    item_measure = kwargs.get('item_measure', None)
+    bin_measure = kwargs.get('bin_measure', None)
+    single = kwargs.get('single', False)
+    problem = kwargs.get('problem', None)
+
+    items = problem.get('items', None)
+    bins = problem.get('bins', None)
+
+    item_objects = [IndexedItem(r, i) for i, r in enumerate(items)]
+    bin_objects = [IndexedBin(c, i) for i, c in enumerate(bins)]
+
+    # FIXME: single for balance?
+    start_time = time.process_time()
+    failed = heuristic(item_objects, bin_objects, item_measure, bin_measure)
+    stop_time = time.process_time()
+
+    mapping = [[item_object.index for item_object in bin_object.items] 
+               for bin_object in sorted(bin_objects, key=lambda x : x.index)]
+
+    # FIXME: method names?
+    return {
+        'solver-githash' : 'GITHASH',
+        'problem-argshash' : problem.get('argshash', None),
+        'algorithm' : { 'type' : 'heuristic', 
+                        'family' : 'gabay2013vsv', 
+                        'params' : None },
+        'datetime' : datetime.now(),
+        'mapping' : mapping,
+        'failcount' : mapping.count(None),
+        'bincount' : len(Counter(mapping)),
+        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
+        'runtime' : stop_time - start_time,
+    }
+
+
 def main(argv=None):
 
     parser = ArgumentParser(description="Solve a vector packing problem.")
