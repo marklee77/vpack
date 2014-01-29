@@ -5,7 +5,6 @@ from os import path, system
 from distutils.core import setup, Command
 from distutils.command.install import install
 from distutils.extension import Extension
-from Cython.Distutils import build_ext
 
 class my_install(install):
     def run(self):
@@ -51,6 +50,7 @@ setup(
       'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
       'Topic :: Scientific/Engineering'
     ],
-    cmdclass = {'test': PyTest, 'build_ext' : build_ext, 'install': my_install},
+    #cmdclass = {'test': PyTest, 'install': my_install},
+    cmdclass = {'install': my_install},
     # install_requires=[ "NumPy" ], FIXME: not supported in distutils?
 )
