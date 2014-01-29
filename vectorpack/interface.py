@@ -143,8 +143,12 @@ def pack_vectors_gabay2013vsv(**kwargs):
     failed = heuristic(item_objects, bin_objects, item_measure, bin_measure)
     stop_time = time.process_time()
 
-    mapping = [[item_object.index for item_object in bin_object.items] 
-               for bin_object in sorted(bin_objects, key=lambda x : x.index)]
+    mapping = [-1] * len(items)
+
+    # FIXME: probably a more pythonic way to do this...
+    for bin_object in bin_objects:
+        for item_object in bin_object.items:
+            mapping[item_object.index] = bin_object.index
 
     # FIXME: method names?
     return {
