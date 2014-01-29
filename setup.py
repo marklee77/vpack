@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-from os import path, system
+#from os import path, system
 
-from distutils.core import setup, Command
-from distutils.command.install import install
-from distutils.extension import Extension
+#from distutils.core import setup, Command
+#from distutils.command.install import install
+#from distutils.extension import Extension
+
+from setuptools import setup
 
 class my_install(install):
     def run(self):
@@ -51,6 +53,6 @@ setup(
       'Topic :: Scientific/Engineering'
     ],
     #cmdclass = {'test': PyTest, 'install': my_install},
-    cmdclass = {'install': my_install},
+    #cmdclass = {'install': my_install},
     # install_requires=[ "NumPy" ], FIXME: not supported in distutils?
 )
