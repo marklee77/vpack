@@ -98,7 +98,7 @@ def pack_vectors(**kwargs):
     stop_time = time.process_time()
 
     return {
-        'solver-githash' : 'GITHASH',
+        'solver-githash' : '__GITHASH__',
         'problem-argshash' : problem.get('argshash', None),
         'pack' : pack,
         'itemsort' : itemsort,
@@ -143,7 +143,7 @@ def pack_vectors_gabay2013vsv(**kwargs):
     failed = heuristic(item_objects, bin_objects, item_measure, bin_measure)
     stop_time = time.process_time()
 
-    mapping = [-1] * len(items)
+    mapping = [None] * len(items)
 
     # FIXME: probably a more pythonic way to do this...
     for bin_object in bin_objects:
@@ -152,11 +152,64 @@ def pack_vectors_gabay2013vsv(**kwargs):
 
     # FIXME: method names?
     return {
-        'solver-githash' : 'GITHASH',
+        'solver-githash' : '__GITHASH__',
         'problem-argshash' : problem.get('argshash', None),
         'algorithm' : { 'type' : 'heuristic', 
                         'family' : 'gabay2013vsv', 
                         'params' : None },
+        'datetime' : datetime.now(),
+        'mapping' : mapping,
+        'failcount' : mapping.count(None),
+        'bincount' : len(Counter(mapping)),
+        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
+        'runtime' : stop_time - start_time,
+    }
+
+def pack_vectors_openopt(**kwargs):
+    from openopt import BPP
+
+    solver = kwargs.get('solver', 'glpk')
+    iprint = kwargs.get('iprint', -1)
+
+    problem = kwargs.get('problem', None)
+
+    items = problem.get('items', None)
+    bins = problem.get('bins', None)
+
+    # FIXME: smarter handling of items of the same type...
+    openopt_items = [dict([('name', i), ('n', 1)] + 
+                          [('d{:d}'.format(d), r) for d, r in enumerate(item)])
+                     for i, item in enumerate(items)]
+
+    bin_set = set(tuple(bin_) for bin_ in bins)
+    if len(bin_set) != 1:
+        raise Exception('openopt can only work with homogeneous bins')
+
+    openopt_bins = dict(
+        [('d{:d}'.format(d), c) for d, c in enumerate(bins[0])] +
+        [('n', len(bins))]
+    )
+
+    openopt_prob = BPP(openopt_items, openopt_bins)
+
+    # FIXME: single for balance?
+    start_time = time.process_time()
+    openopt_result = openopt_prob.solve(solver, iprint=iprint)
+    stop_time = time.process_time()
+
+    mapping = [None] * len(items)
+    for b, bin_contents in enumerate(openopt_result.xf):
+        for i, count in bin_contents.items():
+            mapping[i] = b
+
+    # FIXME: method names?
+    return {
+        'solver-githash' : '__GITHASH__',
+        'problem-argshash' : problem.get('argshash', None),
+        'algorithm' : { 'type' : 'exact', 
+                        'family' : 'openopt', 
+                        'solver' : solver,
+                        'iprint' : iprint },
         'datetime' : datetime.now(),
         'mapping' : mapping,
         'failcount' : mapping.count(None),

@@ -1,7 +1,22 @@
 #!/usr/bin/env python
 """ Basic Setup Script """
 
+from os import path, system
+
 from setuptools import setup
+from setuptools.command.install import install
+
+class CustomInstallCommand(install):
+    """ Custom Install Command """
+
+    def run(self):
+        install.run(self)
+        try:
+            githash = open('.git/refs/heads/master').read()[:-1]
+            system('sed -i /__GITHASH__/s/__GITHASH__/' + githash + '/ ' +
+                   path.join(self.install_lib, 'vectorpack', 'interface.py'))
+        except IOError:
+            pass
 
 setup(
     name='VectorPack',
@@ -26,4 +41,5 @@ setup(
       'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
       'Topic :: Scientific/Engineering'
     ],
+    cmdclass = { 'install' : CustomInstallCommand }
 )
