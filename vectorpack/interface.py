@@ -20,58 +20,9 @@ except ImportError:
     from yaml import Dumper
 
 from vectorpack.packs import get_pack_by_name
-from vectorpack.sorts import get_sort_key_by_name
-from vectorpack.selects import get_select_by_name
+from vectorpack.sorts import parse_sort_cmdline
+from vectorpack.selects import parse_select_cmdline
 from vectorpack.util import verify_mapping, negate_func
-
-def parse_sort_cmdline(sortcmd):
-    args = sortcmd.split(":")
-
-    arg = args.pop(0)
-    desc = False
-    if arg in [ "a", "d" ]:
-        if arg is "d":
-            desc = True
-        arg = args.pop(0)
-
-    sort_key = get_sort_key_by_name(arg)
-
-    kwargs = {}
-    if args:
-        kwargs.update(yload("\n".join(arg.replace('=', ': ') for arg in args)))
-
-    if desc:
-        return partial(negate_func, sort_key, **kwargs)
-
-    if kwargs:
-        return partial(sort_key, **kwargs)
-
-    return sort_key
-
-
-def parse_select_cmdline(sortcmd):
-    args = sortcmd.split(":")
-
-    arg = args.pop(0)
-    desc = False
-    if arg in [ "a", "d" ]:
-        if arg is "d":
-            desc = True
-        arg = args.pop(0)
-
-    select_key = get_select_by_name(arg)
-
-    kwargs = {}
-    if args:
-        kwargs.update(yload("\n".join(arg.replace('=', ': ') for arg in args)))
-
-    if desc:
-        return partial(negate_func, select_key, **kwargs)
-
-    if kwargs:
-        return partial(select_key, **kwargs)
-
-    return select_key
 
 def pack_vectors(**kwargs):
 

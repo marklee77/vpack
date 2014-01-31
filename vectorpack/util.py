@@ -1,7 +1,7 @@
-from hashlib import sha1
-from numpy import all, array, uint8
+from numpy import array
 
 def verify_mapping(items=None, bins=None, mapping=None):
+    """ Verifies that mapping does not overfill any bins """
     if items is None:
         return True
     if bins is None or mapping is None:
@@ -16,8 +16,10 @@ def verify_mapping(items=None, bins=None, mapping=None):
 
 
 def zero(*args, **kwargs):
+    """ This function takes any arguments and always returns 0. """
     return 0
 
 
-def negate_func(f, *args, **kwargs):
-    return -f(*args, **kwargs)
+def negate_func(func):
+    """ returns a function that returns the negation of f """
+    return lambda *args, **kwargs: -func(*args, **kwargs)

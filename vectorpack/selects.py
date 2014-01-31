@@ -2,6 +2,8 @@ from functools import partial, wraps
 
 import numpy as np
 
+from yaml import load as yload
+
 from .sorts import maxratio, imaxratio, maxdiff
 from .util import negate_func, zero
 
@@ -27,8 +29,6 @@ def dimension_to_rank(v):
         dimension number to a rank for that dimension
     """
     d2r = [None] * len(v)
-    for r, d in enumerate(rank_to_dimension(v)):
-        d2r[d] = r
     return d2r
 
 
@@ -100,14 +100,11 @@ def parse_select_cmdline(sortcmd):
 
     sort_key = get_select_by_name(arg)
 
-    kwargs = {}
-    if args:
-        kwargs.update(yload("\n".join(arg.replace('=', ': ') for arg in args)))
-
     if desc:
-        return partial(negate_func, sort_key, **kwargs)
+        sort_key = negate_func(sort_key)
 
-    if kwargs:
-        return partial(sort_key, **kwargs)
+    if args:
+        kwargs = yload("\n".join(arg.replace('=', ': ') for arg in args))
+        sort_key = partial(sort_key, **kwargs)
 
     return sort_key

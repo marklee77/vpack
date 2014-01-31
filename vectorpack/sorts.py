@@ -67,14 +67,11 @@ def parse_sort_cmdline(sortcmd):
 
     sort_key = get_sort_key_by_name(arg)
 
-    kwargs = {}
-    if args:
-        kwargs.update(yload("\n".join(arg.replace('=', ': ') for arg in args)))
-
     if desc:
-        return partial(negate_func, sort_key, **kwargs)
+        sort_key = negate_func(sort_key)
 
-    if kwargs:
-        return partial(sort_key, **kwargs)
+    if args:
+        kwargs = yload("\n".join(arg.replace('=', ': ') for arg in args))
+        sort_key = partial(sort_key, **kwargs)
 
     return sort_key
