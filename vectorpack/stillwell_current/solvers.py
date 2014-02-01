@@ -19,10 +19,10 @@ try:
 except ImportError:
     from yaml import Dumper
 
-from vectorpack.packs import get_pack_by_name
-from vectorpack.sorts import parse_sort_cmdline
-from vectorpack.selects import parse_select_cmdline
-from vectorpack.util import verify_mapping, negate_func
+from .packs import get_pack_by_name
+from .sorts import parse_sort_cmdline
+from .selects import parse_select_cmdline
+from .util import verify_mapping, negate_func
 
 def pack_vectors(**kwargs):
 
