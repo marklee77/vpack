@@ -3,7 +3,7 @@
 
 from os import path, system
 
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 class CustomInstallCommand(install):
@@ -12,9 +12,11 @@ class CustomInstallCommand(install):
     def run(self):
         install.run(self)
         try:
-            githash = open('.git/refs/heads/master').read()[:-1]
-            system('sed -i /__GITHASH__/s/__GITHASH__/' + githash + '/ ' +
-                   path.join(self.install_lib, 'vectorpack', 'interface.py'))
+            pass
+            # FIXME
+            #githash = open('.git/refs/heads/master').read()[:-1]
+            #system('sed -i /__GITHASH__/s/__GITHASH__/' + githash + '/ ' +
+            #       path.join(self.install_lib, 'vectorpack', 'interface.py'))
         except IOError:
             pass
 
@@ -24,7 +26,7 @@ setup(
     description='Vector Packing Heurisitcs',
     author='Mark Stillwell',
     author_email='marklee@fortawesome.org',
-    packages=['vectorpack', 'vectorpack.test'],
+    packages=find_packages(),
     include_package_data=True,
     scripts=[
              'bin/pack-vectors', 

@@ -21,7 +21,7 @@ def pack_vectors(problem, **kwargs):
 
     mapping = result['mapping']
 
-    return result.update({
+    result.update({
         'solver-githash' : '__GITHASH__',
         'problem-argshash' : problem.get('argshash', None),
         'family' : family,
@@ -32,6 +32,7 @@ def pack_vectors(problem, **kwargs):
         'runtime' : stop_time - start_time,
     })
 
+    return result
 
 def generate_problem(**kwargs):
 
@@ -41,6 +42,8 @@ def generate_problem(**kwargs):
 
     result = module.generate_problem(**kwargs)
 
-    return result.update({
-        'family' : family
+    result.update({
+        'family' : family,
     })
+
+    return result

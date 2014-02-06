@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser
-from collections import Counter
-from datetime import datetime
-from functools import partial
-from os.path import isfile
-import time
 
 from yaml import load as yload, dump as ydump
 
@@ -19,29 +14,24 @@ try:
 except ImportError:
     from yaml import Dumper
 
-from .packs import get_pack_by_name
-from .sorts import parse_sort_cmdline
-from .selects import parse_select_cmdline
-from .util import verify_mapping, negate_func
+from vsvbp.container import Item, Bin
 
-def pack_vectors(**kwargs):
-    from vsvbp.container import Item, Bin
+class IndexedItem(Item):
+    def __init__(self, requirements, index):
+        self.index = index
+        Item.__init__(self, requirements)
 
-    class IndexedItem(Item):
-        def __init__(self, requirements, index):
-            self.index = index
-            Item.__init__(self, requirements)
+class IndexedBin(Bin):
+    def __init__(self, capacities, index):
+        self.index = index
+        Bin.__init__(self, capacities)
 
-    class IndexedBin(Bin):
-        def __init__(self, capacities, index):
-            self.index = index
-            Bin.__init__(self, capacities)
+def pack_vectors(problem, **kwargs):
 
     heuristic = kwargs.get('heuristic', None)
     item_measure = kwargs.get('item_measure', None)
     bin_measure = kwargs.get('bin_measure', None)
     single = kwargs.get('single', False)
-    problem = kwargs.get('problem', None)
 
     items = problem.get('items', None)
     bins = problem.get('bins', None)
@@ -50,9 +40,7 @@ def pack_vectors(**kwargs):
     bin_objects = [IndexedBin(c, i) for i, c in enumerate(bins)]
 
     # FIXME: single for balance?
-    start_time = time.process_time()
     failed = heuristic(item_objects, bin_objects, item_measure, bin_measure)
-    stop_time = time.process_time()
 
     mapping = [None] * len(items)
 
@@ -63,17 +51,7 @@ def pack_vectors(**kwargs):
 
     # FIXME: method names?
     return {
-        'solver-githash' : '__GITHASH__',
-        'problem-argshash' : problem.get('argshash', None),
-        'algorithm' : { 'type' : 'heuristic', 
-                        'family' : 'gabay2013vsv', 
-                        'params' : None },
-        'datetime' : datetime.now(),
         'mapping' : mapping,
-        'failcount' : mapping.count(None),
-        'bincount' : len(Counter(mapping)),
-        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
-        'runtime' : stop_time - start_time,
     }
 
 def pack_vectors_openopt(**kwargs):

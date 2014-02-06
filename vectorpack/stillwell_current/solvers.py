@@ -23,14 +23,13 @@ from .packs import get_pack_by_name
 from .sorts import parse_sort_cmdline
 from .selects import parse_select_cmdline
 
-def pack_vectors(**kwargs):
+def pack_vectors(problem, **kwargs):
 
     pack = kwargs.get('pack', 'pack_by_bins')
     itemsort = kwargs.get('itemsort', 'none')
     binsort = kwargs.get('binsort', 'none')
     select = kwargs.get('select', 'none')
     split = max(1, kwargs.get('split', 1))
-    problem = kwargs.get('problem', None)
 
     pack_func = get_pack_by_name(pack)
     item_key = parse_sort_cmdline(itemsort)
