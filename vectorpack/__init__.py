@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+
+"""
+vectorpack vector packing heuristic/solver library
+
+:copyright: (c) 2013 by Mark Stillwell.
+:license: GPL 3
+
+"""
+
 from collections import Counter
 from datetime import datetime
 from importlib import import_module
@@ -6,6 +16,7 @@ import time
 
 from .util import verify_mapping
 
+# FIXME: inner runtime vs outer runtime?
 def pack_vectors(problem, **kwargs):
 
     if problem is None:
