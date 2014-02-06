@@ -14,17 +14,17 @@ from vsvbp.generator import generator, unif_bin
 
 def generate_problem(**kwargs):
 
-    seed = kwargs.get('seed', 1)
-    num_bins = kwargs.get('num_bins', 0)
-    num_resources = kwargs.get('num_resources', 1)
-    min_fill = kwargs.get('min_fill', 0.8)
-    bin_generator = kwargs.get('bin_generator', unif_bin)
+    genargs = kwargs.copy()
+    family = genargs.pop('family', None)
 
-    family = kwargs.pop('family', None)
+    seed = genargs.pop('seed', -1)
+    num_bins = genargs.pop('num_bins', 0)
+    num_resources = genargs.pop('num_resources', 1)
+    min_fill = genargs.pop('min_fill', 0.8)
+    bin_generator = genargs.pop('bin_generator', unif_bin)
+
     instance = generator(num_bins, num_resources, min_fill, 
-                         bin_generator=bin_generator, seed=seed, **kwargs)
-    if family is not None:
-        kwargs['family'] = family
+                         bin_generator=bin_generator, seed=seed, **genargs)
 
     items = [tuple(item.requirements[:]) for item in instance.items]
     bins = [tuple(bin_.capacities[:]) for bin_ in instance.bins]
