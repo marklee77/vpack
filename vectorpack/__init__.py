@@ -17,6 +17,7 @@ import time
 from .util import verify_mapping
 
 # FIXME: inner runtime vs outer runtime?
+# FIXME: maybe as a check the called function should set the family?
 def pack_vectors(problem, **kwargs):
 
     if problem is None:
