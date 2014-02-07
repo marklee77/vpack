@@ -39,18 +39,16 @@ def pack_vectors(problem, **kwargs):
     items = problem.get('items', None)
     bins = problem.get('bins', None)
 
+    start_time = time.process_time()
     mapping = pack_func(items=items, bins=bins, 
                         item_key=item_key, bin_key=bin_key, 
                         select_key=select_key, 
                         split=split)
+    stop_time = time.process_time()
 
     return {
-        'pack' : pack,
-        'itemsort' : itemsort,
-        'binsort' : binsort,
-        'select' : select,
-        'split' : split,
         'mapping' : mapping,
+        'algo-runtime' : stop_time - start_time,
     }
 
 def main(argv=None):

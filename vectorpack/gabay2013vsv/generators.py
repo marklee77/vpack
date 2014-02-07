@@ -10,21 +10,23 @@ try:
 except ImportError:
     from yaml import Dumper
 
-from vsvbp.generator import generator, unif_bin
+import vsvbp.generator as generator
 
 def generate_problem(**kwargs):
 
-    genargs = kwargs.copy()
-    family = genargs.pop('family', None)
+    genkwargs = kwargs.copy()
 
-    seed = genargs.pop('seed', -1)
-    num_bins = genargs.pop('num_bins', 0)
-    num_resources = genargs.pop('num_resources', 1)
-    min_fill = genargs.pop('min_fill', 0.8)
-    bin_generator = genargs.pop('bin_generator', unif_bin)
+    _ = genkwargs.pop('family', None)
 
-    instance = generator(num_bins, num_resources, min_fill, 
-                         bin_generator=bin_generator, seed=seed, **genargs)
+    seed = genkwargs.pop('seed', -1)
+    num_bins = genkwargs.pop('num_bins', 0)
+    num_resources = genkwargs.pop('num_resources', 1)
+    min_fill = genkwargs.pop('min_fill', 0.8)
+    bin_generator_name = genkwargs.pop('bin_generator', 'unif_bin')
+    bin_generator = getattr(generator, bin_generator_name)
+
+    instance = generator.generator(num_bins, num_resources, min_fill, 
+                         bin_generator=bin_generator, seed=seed, **genkwargs)
 
     items = [tuple(item.requirements[:]) for item in instance.items]
     bins = [tuple(bin_.capacities[:]) for bin_ in instance.bins]

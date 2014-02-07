@@ -20,9 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from functools import wraps
 from itertools import accumulate, product
 
-import numpy as np
-
-from .util import zero
+from .util import vector, zero
 
 
 # FIXME: prefiltering?
@@ -31,7 +29,7 @@ def _pack_by_items(
 
     for i in item_idxs:
         try:
-            b = min((b for b in bin_idxs if (items[i] <= bins[b]).all()), 
+            b = min((b for b in bin_idxs if items[i] <= bins[b]), 
                     key=lambda b: select_key(i, b))
             mapping[i] = b
             bins[b] -= items[i]
@@ -47,7 +45,7 @@ def _pack_by_bins(
         while True:
             try:
                 pi, i = min(((pi, i) for pi, i in enumerate(item_idxs) 
-                             if (items[i] <= bins[b]).all()),
+                             if items[i] <= bins[b]),
                             key=lambda x: select_key(x[1], b))
                 mapping[i] = b
                 bins[b] -= items[i]
@@ -69,7 +67,7 @@ def _pack_by_product(
             pi, i, b = min(((pi, i, b) for pi, i, b in 
                             ((x[0], x[1], y) for x, y in 
                                 product(enumerate(item_idxs), bin_idxs))
-                            if (items[i] <= bins[b]).all()), 
+                            if all(items[i] <= bins[b])), 
                            key=lambda x: select_key(x[1], x[2]))
             mapping[i] = b
             bins[b] -= items[i]
@@ -108,14 +106,14 @@ def _pack(items, bins,
 
     items_copy = None
     if items is not None:
-        items_copy = [np.array(item, copy=True, dtype=int) for item in items]
+        items_copy = [vector(item) for item in items]
 
     num_items = len(items_copy)
     item_idxs = list(range(num_items))
 
     bins_copy = None
     if bins is not None:
-        bins_copy = [np.array(bin_, copy=True, dtype=int) for bin_ in bins]
+        bins_copy = [vector(bin_) for bin_ in bins]
 
     num_bins = len(bins_copy)
     bin_idxs = list(range(num_bins))

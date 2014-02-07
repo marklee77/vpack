@@ -1,3 +1,5 @@
+# FIXME: borked
+
 def verify_mapping(items=None, bins=None, mapping=None, **kwargs):
     """ Verifies that mapping does not overfill any bins """
     if items is None:

@@ -36,12 +36,13 @@ def pack_vectors(problem, **kwargs):
     result.update({
         'solver-githash' : '__GITHASH__',
         'problem-argshash' : problem.get('argshash', None),
+        'kwargs' : kwargs,
         'family' : family,
         'datetime' : datetime.now(),
         'failcount' : mapping.count(None),
         'bincount' : len(Counter(mapping)),
         'verified' : verify_mapping(**result),
-        'runtime' : stop_time - start_time,
+        'total-runtime' : stop_time - start_time,
     })
 
     return result

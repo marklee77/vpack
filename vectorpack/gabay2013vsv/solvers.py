@@ -14,7 +14,11 @@ try:
 except ImportError:
     from yaml import Dumper
 
+import time
+
 from vsvbp.container import Item, Bin
+import vsvbp.heuristics as heuristics
+import vsvbp.measures as measures
 
 class IndexedItem(Item):
     def __init__(self, requirements, index):
@@ -28,19 +32,25 @@ class IndexedBin(Bin):
 
 def pack_vectors(problem, **kwargs):
 
-    heuristic = kwargs.get('heuristic', None)
-    item_measure = kwargs.get('item_measure', None)
-    bin_measure = kwargs.get('bin_measure', None)
-    single = kwargs.get('single', False)
-
     items = problem.get('items', None)
     bins = problem.get('bins', None)
+
+    heuristic_name = kwargs.get('heuristic', None)
+    item_measure_name = kwargs.get('item_measure', None)
+    bin_measure_name = kwargs.get('bin_measure', None)
+    single = kwargs.get('single', False)
+
+    heuristic = getattr(heuristics, heuristic_name)
+    item_measure = getattr(measures, item_measure_name)
+    bin_measure = getattr(measures, bin_measure_name)
 
     item_objects = [IndexedItem(r, i) for i, r in enumerate(items)]
     bin_objects = [IndexedBin(c, i) for i, c in enumerate(bins)]
 
     # FIXME: single for balance?
+    start_time = time.process_time()
     failed = heuristic(item_objects, bin_objects, item_measure, bin_measure)
+    stop_time = time.process_time()
 
     mapping = [None] * len(items)
 
@@ -52,168 +62,5 @@ def pack_vectors(problem, **kwargs):
     # FIXME: method names?
     return {
         'mapping' : mapping,
+        'algo-runtime' : stop_time - start_time,
     }
-
-def pack_vectors_openopt(**kwargs):
-    from openopt import BPP
-
-    solver = kwargs.get('solver', 'glpk')
-    iprint = kwargs.get('iprint', -1)
-
-    problem = kwargs.get('problem', None)
-
-    items = problem.get('items', None)
-    bins = problem.get('bins', None)
-
-    # FIXME: smarter handling of items of the same type...
-    openopt_items = [dict([('name', i), ('n', 1)] + 
-                          [('d{:d}'.format(d), r) for d, r in enumerate(item)])
-                     for i, item in enumerate(items)]
-
-    bin_set = set(tuple(bin_) for bin_ in bins)
-    if len(bin_set) != 1:
-        raise Exception('openopt can only work with homogeneous bins')
-
-    openopt_bins = dict(
-        [('d{:d}'.format(d), c) for d, c in enumerate(bins[0])] +
-        [('n', len(bins))]
-    )
-
-    openopt_prob = BPP(openopt_items, openopt_bins)
-
-    # FIXME: single for balance?
-    start_time = time.process_time()
-    openopt_result = openopt_prob.solve(solver, iprint=iprint)
-    stop_time = time.process_time()
-
-    mapping = [None] * len(items)
-    for b, bin_contents in enumerate(openopt_result.xf):
-        for i, count in bin_contents.items():
-            mapping[i] = b
-
-    # FIXME: method names?
-    return {
-        'solver-githash' : '__GITHASH__',
-        'problem-argshash' : problem.get('argshash', None),
-        'algorithm' : { 'type' : 'exact', 
-                        'family' : 'openopt', 
-                        'solver' : solver,
-                        'iprint' : iprint },
-        'datetime' : datetime.now(),
-        'mapping' : mapping,
-        'failcount' : mapping.count(None),
-        'bincount' : len(Counter(mapping)),
-        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
-        'runtime' : stop_time - start_time,
-    }
-
-def pack_vectors_vpsolver(**kwargs):
-    from pyvpsolver import solve_mvbp
-
-    solver = kwargs.get('solver', 'glpk')
-    verbose = kwargs.get('verbose', False)
-
-    problem = kwargs.get('problem', None)
-
-    items = problem.get('items', None)
-    bins = problem.get('bins', None)
-
-    # FIXME: smarter handling of items of the same type...
-    # brandao can only handle int contents...
-    vpsolver_items = [[[1000 * int(r) for r in item]] for item in items]
-
-    bin_set = set(tuple(bin_) for bin_ in bins)
-    if len(bin_set) != 1:
-        # FIXME: well, for now...
-        raise Exception('vpsolver can only work with homogeneous bins')
-
-    vpsolver_bins = [tuple(1000 * int(c) for c in bins[0])]
-
-    b = [1] * len(items)
-    cost = [1]
-
-    script = "vpsolver_" + solver + ".sh"
-
-    # FIXME: single for balance?
-    start_time = time.process_time()
-    _, sol = solve_mvbp(vpsolver_bins, vpsolver_items, b, cost, 
-                        verbose=verbose, script=script)
-    stop_time = time.process_time()
-
-    mapping = [None] * len(items)
-    for b, (_, bin_contents) in enumerate(sol[0]):
-        for i, _ in bin_contents:
-            mapping[i] = b
-
-    # FIXME: method names?
-    return {
-        'solver-githash' : '__GITHASH__',
-        'problem-argshash' : problem.get('argshash', None),
-        'algorithm' : { 'type' : 'exact', 
-                        'family' : 'brandao2013vsv', 
-                        'solver' : solver,
-                        'verbose' : verbose },
-        'datetime' : datetime.now(),
-        'mapping' : mapping,
-        'failcount' : mapping.count(None),
-        'bincount' : len(Counter(mapping)),
-        'verified' : verify_mapping(items=items, bins=bins, mapping=mapping),
-        'runtime' : stop_time - start_time,
-    }
-
-def main(argv=None):
-
-    parser = ArgumentParser(description="Solve a vector packing problem.")
-    parser.add_argument('-i', '--input', help='input file')
-    parser.add_argument('-o', '--output', default='-', help='output file')
-    parser.add_argument('-P', '--pack', default='pack_by_bins', 
-                        help='packing algorithm')
-    parser.add_argument('-I', '--itemsort', default='none', 
-                        help='item sorting algorithm')
-    parser.add_argument('-B', '--binsort', default='none', 
-                        help='bin sorting algorithm')
-    parser.add_argument('-S', '--select', default='none', 
-                        help='pairwise selection algorithm')
-    parser.add_argument('-s', '--split', default=1, type=int,
-                        help='split the problem')
-
-    args = parser.parse_args()
-
-    args.problem = {}
-    if isfile(args.input):
-        args.problem = yload(open(args.input, 'r'), Loader=Loader)
-    else:
-        raise SystemExit("error: can't find file %s" % args.input)
-
-    solution = pack_vectors(**args.__dict__)
-
-    # FIXME: hacky
-    mclient = None
-    mcoll = None
-    if args.output.startswith("mongodb://"):
-        try:
-            dbinfo = uri_parser.parse_uri(args.output)
-            host, port = dbinfo['nodelist'][0]
-            db, collection = dbinfo['database'].split('/')
-            username = dbinfo['username']
-            password = dbinfo['password']
-            connect_url = host + ':' + str(port)
-            if username is not None and password is not None:
-                connect_url = username + ':' + password + '@' + connect_url
-            connect_url = 'mongodb://' + connect_url
-        except (AttributeError, ValueError):
-            raise SystemExit('Required mongodb output url format is ' 
-                '"mongodb://[user:pass@]host[:port]/database/collection"')
-        mclient = MongoClient(connect_url)
-        mcoll = mclient[db][collection]
-        if mcoll.find_one(solution) is not None:
-            raise SystemExit('Solution To This Problem Already Exists!')
-
-    if mcoll is not None and mclient is not None:
-        mcoll.insert(solution)
-        mclient.close()
-    else:
-        print(ydump(solution, Dumper=Dumper))
-
-if __name__ == "__main__":
-    main() 
