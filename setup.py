@@ -43,5 +43,10 @@ setup(
       'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
       'Topic :: Scientific/Engineering'
     ],
-    cmdclass = { 'install' : CustomInstallCommand }
+    cmdclass = { 'install' : CustomInstallCommand },
+    dependency_links = [
+        "https://github.com/mgabay/Variable-Size-Vector-Bin-Packing/tarball/master#egg=vsvbp-0.0.2",
+        "https://github.com/fdabrandao/vpsolver/tarball/master#egg=vpsolver-1.1"
+    ],
+    install_requires = ["pyyaml", "numpy", "vpsolver==1.1", "vsvbp==0.0.2"]
 )

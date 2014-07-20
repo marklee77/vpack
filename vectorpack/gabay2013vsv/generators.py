@@ -57,7 +57,7 @@ def main(argv=None):
 
     args = parser.parse_args()
 
-    print(dump(generate_problem(**args.__dict__), Dumper=Dumper), end='')
+    print(dump(generate_problem(**args.__dict__), Dumper=Dumper))
 
 if __name__ == "__main__":
     main()
