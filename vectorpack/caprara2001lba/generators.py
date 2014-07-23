@@ -15,7 +15,11 @@ def generate_problem(**kwargs):
     seed = kwargs.get('seed', 1)
     num_dimensions = kwargs.get('num_dimensions', 2)
     num_items = kwargs.get('num_items', 0)
+    num_bins = kwargs.get('num_bins', 0)
     cls = kwargs.get('cls', 1)
+
+    if num_bins == 0:
+        num_bins = num_items
 
     random.seed(seed) 
 
@@ -50,7 +54,7 @@ def generate_problem(**kwargs):
                   for i in range(num_dimensions)] 
                  for j in range(num_items)]
 
-        bins = [[capacity] * num_dimensions] * num_items
+        bins = [[capacity] * num_dimensions] * num_bins
 
     elif cls < 9:
         if num_dimensions != 2:
@@ -67,7 +71,7 @@ def generate_problem(**kwargs):
                 w = random.randint(20, 100)
                 v = random.randint(110 - w, 130 - w)
                 items.append([w, v])
-        bins = [[150, 150]] * num_items
+        bins = [[150, 150]] * num_bins
 
     elif cls == 9:
         items = [[random.randint(100, 400) 
@@ -76,7 +80,7 @@ def generate_problem(**kwargs):
         dimtotals = [sum(dim) for dim in zip(*items)]
         L = int(ceil(float(max(dimtotals))/1000))
         caps = [int(ceil(float(dimtotal)/L)) for dimtotal in dimtotals]
-        bins = [caps] * num_items
+        bins = [caps] * num_bins
         pass
 
     elif cls == 10:
@@ -92,7 +96,7 @@ def generate_problem(**kwargs):
             items.append([100 - items[2*i][d] - items[2*i+1][d]
                          for d in range(num_dimensions)])
 
-        bins = [[100] * num_dimensions] * num_items
+        bins = [[100] * num_dimensions] * num_bins
 
     return {
         'note' : 'Caprara and Toth, Class ' + str(cls),
