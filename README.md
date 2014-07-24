@@ -12,7 +12,7 @@ Setup
 -----
 
 When using vpack as dependency with pip, you need to download the dependency-links.
-This is required because `vsvbp` and `vpack` are not available directly on _Pypi_
+This is required because `vsvbp` and `vpsolver` are not available directly on _Pypi_
 
 ```
 pip install -r requirements.txt --process-dependency-links
