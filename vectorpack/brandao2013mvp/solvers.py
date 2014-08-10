@@ -2,13 +2,11 @@
 
 from pyvpsolver import solve_mvbp
 
-def pack_vectors(**kwargs):
+def pack_vectors(problem, **kwargs):
 
     solver = kwargs.get('solver', 'glpk')
     verbose = kwargs.get('verbose', False)
     factor = kwargs.get('factor', 1000)
-
-    problem = kwargs.get('problem', None)
 
     items = problem.get('items', None)
     bins = problem.get('bins', None)
