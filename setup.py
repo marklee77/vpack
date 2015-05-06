@@ -34,7 +34,7 @@ setup(
              'bin/generate-vectorpack-problem-caprara',
     ],
     url='http://pypi.python.org/pypi/VectorPack/',
-    license='LICENSE.txt',
+    license='LICENSE',
     long_description=open('README.md').read(),
     keywords='',
     classifiers=[
